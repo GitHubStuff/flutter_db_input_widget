@@ -1,0 +1,30 @@
+name: flutter_db_input_widget
+description: A Widget for flutter_db_builder
+version: 0.0.1
+author:
+homepage:
+
+environment:
+  sdk: '>=2.2.0 <3.0.0'
+
+dependencies:
+  after_layout: ^1.0.7+2
+  cupertino_icons: ^0.1.2
+  flutter:
+    sdk: flutter
+  flutter_theme_package:
+    git:
+      url: https://github.com/GitHubStuff/flutter_theme_package.git
+  flutter_tracers:
+    git:
+      url: https://github.com/GitHubStuff/flutter_tracers.git
+  notifier: ^1.0.2
+  shared_preferences: ^0.5.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+
+flutter:
+  uses-material-design: true
