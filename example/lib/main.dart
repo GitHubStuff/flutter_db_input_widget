@@ -1,4 +1,5 @@
 import 'package:after_layout/after_layout.dart';
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_db_input_widget/flutter_db_input_widget.dart';
 import 'package:flutter_theme_package/flutter_theme_package.dart';
@@ -136,8 +137,38 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
   Widget body() {
     return Center(
         child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: <Widget>[
         _tabletInputLine,
+        Row(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: WideAnimatedButton(
+                  colors: ModeThemeData.productSwatch,
+                  height: 60.0,
+                  width: 100.0,
+                  onKeyPress: (action, timestamp) {},
+                  onTap: (action, timestamp) {}),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: WideAnimatedButton(
+                  colors: ModeThemeData.productSwatch,
+                  centerWidget: const AutoSizeText(
+                    'PRESS',
+                    style: TextStyle(
+                      fontSize: 30,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  height: 60.0,
+                  width: 100.0,
+                  onKeyPress: (action, timestamp) {},
+                  onTap: (action, timestamp) {}),
+            ),
+          ],
+        )
       ],
     ));
   }
