@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_db_input_widget/src/broadcast_stream.dart';
 import 'package:flutter_tracers/trace.dart' as Log;
 
-import 'field_input.dart';
+import '../src/field_input.dart';
 
 /// Displays an input line for fields name, json key, data type (array, bool, class, date, int, real, string),
 /// a table name for 'array' and 'class' types, and comment field

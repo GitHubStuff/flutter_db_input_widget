@@ -141,6 +141,7 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
       mainAxisAlignment: MainAxisAlignment.center,
       children: <Widget>[
         tabletInputLine,
+        DisplayRecordsWidget(),
         Row(
           children: [
             Padding(
