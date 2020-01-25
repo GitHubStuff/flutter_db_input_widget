@@ -41,21 +41,21 @@ class Example extends StatefulWidget {
 }
 
 class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMixin<Example> {
-  bool _hideSpinner = true;
+  bool hideSpinner = true;
+  String caption = 'Start';
+  int counter = 0;
+  DBProjectBloc projectBloc;
+  String get tableName => 'table$counter';
 
-  TabletInputLine _tabletInputLine;
-  FieldInfoStream _fieldInfoStream = FieldInfoStream();
-  FieldInfo _fieldInfo = FieldInfo()..mock(complex: true);
-
+  FieldInput fieldInput = FieldInput();
+  TabletInputLine tabletInputLine;
+  InputCompleteStream inputCompleteStream = InputCompleteStream();
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     Log.t('example initState');
-    _tabletInputLine = TabletInputLine(
-      fieldInfoStream: _fieldInfoStream,
-      fieldInfo: _fieldInfo,
-    );
+    tabletInputLine = TabletInputLine(fieldInput: fieldInput, sink: inputCompleteStream.sink);
   }
 
   @override
@@ -87,7 +87,7 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
     Log.t('example build');
     return HudScaffold.progressText(
       context,
-      hide: _hideSpinner,
+      hide: hideSpinner,
       indicatorColors: Swatch(bright: Colors.purpleAccent, dark: Colors.greenAccent),
       progressText: 'Example Showable spinner',
       scaffold: Scaffold(
@@ -98,10 +98,11 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
         floatingActionButton: FloatingActionButton(
           onPressed: () {
             setState(() {
-              _hideSpinner = false;
+              hideSpinner = false;
+              ++counter;
               Future.delayed(Duration(seconds: 3), () {
                 setState(() {
-                  _hideSpinner = true;
+                  hideSpinner = true;
                 });
               });
             });
@@ -129,6 +130,7 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
   void dispose() {
     Log.t('example dispose');
     WidgetsBinding.instance.removeObserver(this);
+    inputCompleteStream.dispose();
     super.dispose();
   }
 
@@ -138,7 +140,7 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
         child: Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: <Widget>[
-        _tabletInputLine,
+        tabletInputLine,
         Row(
           children: [
             Padding(
@@ -146,6 +148,14 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
               child: WideAnimatedButton(
                 caption: 'Write',
                 colors: ModeThemeData.productSwatch,
+                onTap: (tap, timestamp) {
+                  if (projectBloc == null) return;
+                  projectBloc.writeTablesToFile(prettyPrint: true).then((_) {
+                    setState(() {
+                      caption = 'Done!!';
+                    });
+                  });
+                },
                 height: 60.0,
                 width: 200,
               ),
@@ -153,8 +163,16 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: WideAnimatedButton(
-                caption: 'Read',
+                caption: caption,
                 colors: ModeThemeData.primarySwatch,
+                onLongPress: (event, timeStamp) {
+                  DBProjectBloc.make('BigTest').then((bloc) {
+                    projectBloc = bloc;
+                    setState(() {
+                      caption = 'Ready';
+                    });
+                  });
+                },
                 height: 60.0,
                 width: 200.0,
               ),
@@ -166,8 +184,12 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
   }
 
   void listener() {
-    _fieldInfoStream.stream.listen((event) {
-      Log.t(event.toString());
+    inputCompleteStream.stream.listen((event) {
+      Log.t(event.toString(), true, '#T');
+      projectBloc.add(fieldInput: event, toTable: tableName);
+      setState(() {
+        tabletInputLine = TabletInputLine(fieldInput: FieldInput(), sink: inputCompleteStream.sink);
+      });
     });
   }
 }
