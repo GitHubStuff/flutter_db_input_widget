@@ -1,5 +1,6 @@
 import 'dart:io' as io;
 
+import 'package:flutter_tracers/trace.dart' as Log;
 import 'package:path_provider/path_provider.dart';
 
 /// Handles the read/write operates to the documents directory.
@@ -45,7 +46,11 @@ class DBProjectIO {
 
   /// Write a string to file and closes it and flushes the buffer.
   Future<void> writeProject({String contents}) async {
-    final file = await _file;
-    file.writeAsString(contents, flush: true);
+    try {
+      final file = await _file;
+      file.writeAsString(contents, flush: true);
+    } catch (error) {
+      Log.e('writeProject: ${error.toString()}');
+    }
   }
 }

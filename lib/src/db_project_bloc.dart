@@ -21,6 +21,12 @@ class DBProjectBloc with JsonData {
   /// The list of tables, and field descriptions for all the tables used within a single app
   List<DBRecord> _tables = List();
 
+  List<DBRecord> tableList() {
+    List<DBRecord> temp = List.from(_tables);
+    temp.sort((a, b) => (a.name + a.field).toLowerCase().compareTo((b.name + b.field).toLowerCase()));
+    return temp;
+  }
+
   /// File manager to read/write files to the local store.
   File.DBProjectIO _dbProjectIO;
 

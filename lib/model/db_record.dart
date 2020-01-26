@@ -43,7 +43,7 @@ class DBRecord with JsonData {
   DBRecord.fromJson(Map map)
       : name = map['name'],
         field = map['field'],
-        json = map['json]'],
+        json = map['json'],
         type = map['type'],
         target = map['target'],
         comment = map['comment'];
@@ -57,8 +57,9 @@ class DBRecord with JsonData {
         'comment': comment,
       };
 
-  static DBRecord mock() {
-    var result = DBRecord('mockName', 'mockField', 'mockJson', 'c', 'mockTarget', 'mockComment');
+  static DBRecord mock([String table = 'MockTable']) {
+    final field = 'J' + DateTime.now().toLocal().toIso8601String().substring(20);
+    var result = DBRecord('$table', '$field', 'mockJson', 'c', 'mockTarget', 'mockComment');
     return result;
   }
 }

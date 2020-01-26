@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:after_layout/after_layout.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_db_input_widget/model/db_record.dart';
 import 'package:flutter_db_input_widget/src/broadcast_stream.dart';
 import 'package:flutter_tracers/trace.dart' as Log;
 
@@ -15,6 +16,13 @@ import '../src/field_input.dart';
 const _TAB = 9;
 
 class InputCompleteStream extends BroadcastStream<FieldInput> {
+  @override
+  void dispose() {
+    close();
+  }
+}
+
+class InputSelectedStream extends BroadcastStream<DBRecord> {
   @override
   void dispose() {
     close();
@@ -104,7 +112,8 @@ class _TabletInputLine extends State<TabletInputLine> with WidgetsBindingObserve
   @override
   void didUpdateWidget(Widget oldWidget) {
     Log.t('tabletInputLine didUpdateWidget');
-    columns(FieldInput());
+    Log.t('widget ${widget.fieldInput.toString()}');
+    columns(widget.fieldInput);
     setFocus();
     super.didUpdateWidget(oldWidget);
   }
@@ -177,18 +186,13 @@ class _TabletInputLine extends State<TabletInputLine> with WidgetsBindingObserve
   }
 
   /// Template to create an input column
+  /// NOTE: The last column must have handler for (tab/enter) from the keyboard. The design being that 'TAB'
+  /// will create a new row for the same table and 'Enter/Return' will mean a new table is to be created.
+  /// NOTE: All fields but the last one CANNOT be empty, the cursor will not advance on 'TAB' or 'ENTER'
   Widget input({
-    /// The column number (zero based)
     @required int index,
-
-    /// The flex factor to allow for adjustments base on screen width
     @required int flex,
-
-    /// The last column must have handler for (tab/enter) from the keyboard. The design being that 'TAB'
-    /// will create a new row for the same table and 'Enter/Return' will mean a new table is to be created.
     Sink<FieldInput> fieldSink,
-
-    /// Initial value, if any, placed in the text input line via the columns TextEditingController
     @required String value,
   }) {
     final focusNode = FocusNode(debugLabel: fieldInput.fields[index]);
@@ -199,43 +203,46 @@ class _TabletInputLine extends State<TabletInputLine> with WidgetsBindingObserve
     return Flexible(
       child: Padding(
         child: TextFormField(
+          autocorrect: fieldSink != null,
           controller: textController,
           decoration: InputDecoration(labelText: fieldInput.fields[index]),
+          enableSuggestions: fieldSink != null,
           focusNode: focusNodes[index],
           onChanged: (string) {
-            final chr = string.runes.toList().last;
-            if (chr == _TAB) {
-              fieldInput.setIndex(index, string: string);
-              focusNodes[index].unfocus();
-
-              /// If the 'Enter/Return' key was pressed but there is no handler, then just advance to the next field
-              if (fieldSink == null) {
-                FocusScope.of(context).requestFocus(focusNodes[index + 1]);
-              } else {
-                /// If here, the last field received a 'Return/Enter' so the call back will report it was 'tabbed' out.
-                fieldInput.tabbedOut = true;
-                fieldSink.add(fieldInput);
-              }
-            }
+            handlerAdvance(text: string, isTabbed: true, index: index, sink: fieldSink);
           },
           onFieldSubmitted: (string) {
-            fieldInput.setIndex(index, string: string);
-            focusNodes[index].unfocus();
-
-            /// If the 'Enter/Return' key was pressed but there is no handler, then just advance to the next field
-            if (fieldSink == null) {
-              FocusScope.of(context).requestFocus(focusNodes[index + 1]);
-            } else {
-              /// If here, the last field received a 'Return/Enter' so the call back will report it was not 'tabbed' out.
-              fieldInput.tabbedOut = false;
-              fieldSink.add(fieldInput);
-            }
+            handlerAdvance(text: string, isTabbed: false, index: index, sink: fieldSink);
           },
         ),
         padding: EdgeInsets.symmetric(horizontal: 8.0),
       ),
       flex: flex,
     );
+  }
+
+  void handlerAdvance({@required String text, @required bool isTabbed, @required int index, @required Sink<FieldInput> sink}) {
+    if ((text.isEmpty || text == '\t') && sink == null) {
+      Future.delayed(Duration(milliseconds: 200), () {
+        textEditingControllers[index].text = '';
+        FocusScope.of(context).requestFocus(focusNodes[index]);
+      });
+      return;
+    }
+    final chr = text.runes.toList().last;
+    if (chr == _TAB || !isTabbed) {
+      final putString = fieldInput.setIndex(index, string: text);
+      textEditingControllers[index].text = putString;
+
+      /// If the 'Enter/Return' key was pressed but there is no handler, then just advance to the next field
+      if (sink == null) {
+        FocusScope.of(context).requestFocus(focusNodes[index + 1]);
+      } else {
+        /// If here, the last field received a 'Return/Enter' so the call back will report it was 'tabbed' out.
+        fieldInput.tabbedOut = isTabbed;
+        sink.add(fieldInput);
+      }
+    }
   }
 
   /// The dataTypeColumn is just a single letter for types (array, bool, class, datetime, int, real, string) so
@@ -254,42 +261,20 @@ class _TabletInputLine extends State<TabletInputLine> with WidgetsBindingObserve
           decoration: InputDecoration(labelText: fieldInput.fields[index]),
           focusNode: focusNode,
           onChanged: (string) {
-            final chr = string.runes.toList().last;
-
-            /// If there was a preloaded value, then a TAB will mean there is a character+TAB in the input field
-            /// to handle this end chase, the string is checked and if not valid the cursor will force the
-            /// update to stay in this column until a valid type is found
-            while (string.length > 2) {
-              string = string.substring(0, string.length - 1);
+            while (string.length > 1) {
+              string = (string.substring(0, string.length - 1)).toLowerCase();
             }
-            if (string.length == 2 && chr == _TAB) {
-              string = string.substring(0, 1);
-              if (!FieldInput.isDataTypes(string)) {
-                Future.delayed(Duration(milliseconds: 200), () {
-                  controller.text = '';
-                  FocusScope.of(context).requestFocus(focusNodes[index]);
-                });
-              }
-            }
-            if (string != '') {
-              focusNodes[index].unfocus();
-              final type = string.toLowerCase();
-              fieldInput.setIndex(index, string: string);
+            if (!FieldInput.isDataTypes(string)) {
+              Future.delayed(Duration(milliseconds: 200), () {
+                textEditingControllers[index].text = '';
+              });
+            } else {
+              textEditingControllers[index].text = fieldInput.setIndex(index, string: string);
               setVisibility(fieldInput);
-              if (FieldInput.isComplex(type)) {
-                Future.delayed(Duration(milliseconds: 250), () {
-                  FocusScope.of(context).requestFocus(focusNodes[index + 1]);
-                });
-              } else {
-                if (FieldInput.isDataTypes(type)) {
-                  FocusScope.of(context).requestFocus(focusNodes[index + 2]);
-                } else {
-                  Future.delayed(Duration(milliseconds: 200), () {
-                    controller.text = '';
-                    FocusScope.of(context).requestFocus(focusNodes[index]);
-                  });
-                }
-              }
+              final nextFocus = FieldInput.isComplex(string) ? focusNodes[index + 1] : focusNodes[index + 2];
+              Future.delayed(Duration(milliseconds: 200), () {
+                FocusScope.of(context).requestFocus(nextFocus);
+              });
             }
           },
           onFieldSubmitted: (string) {

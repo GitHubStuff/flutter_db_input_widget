@@ -1,6 +1,7 @@
 import 'package:after_layout/after_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_db_input_widget/flutter_db_input_widget.dart';
+import 'package:flutter_db_input_widget/model/db_record.dart';
 import 'package:flutter_theme_package/flutter_theme_package.dart';
 import 'package:flutter_tracers/trace.dart' as Log;
 import 'package:notifier/notifier_provider.dart';
@@ -45,11 +46,13 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
   String caption = 'Start';
   int counter = 0;
   DBProjectBloc projectBloc;
-  String get tableName => 'table$counter';
+  String tableName = 'VeryFirst';
+  List<DBRecord> listOfTables = List();
 
   FieldInput fieldInput = FieldInput();
   TabletInputLine tabletInputLine;
   InputCompleteStream inputCompleteStream = InputCompleteStream();
+  InputSelectedStream inputSelectedStream = InputSelectedStream();
   @override
   void initState() {
     super.initState();
@@ -79,6 +82,7 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
   @override
   void afterFirstLayout(BuildContext context) {
     Log.t('example afterFirstLayout');
+    make();
     listener();
   }
 
@@ -100,6 +104,7 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
             setState(() {
               hideSpinner = false;
               ++counter;
+              tableName = 'table$counter';
               Future.delayed(Duration(seconds: 3), () {
                 setState(() {
                   hideSpinner = true;
@@ -141,7 +146,10 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
       mainAxisAlignment: MainAxisAlignment.center,
       children: <Widget>[
         tabletInputLine,
-        DisplayRecordsWidget(),
+        DisplayRecordsWidget(
+          sink: inputSelectedStream.sink,
+          tables: listOfTables,
+        ),
         Row(
           children: [
             Padding(
@@ -167,12 +175,7 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
                 caption: caption,
                 colors: ModeThemeData.primarySwatch,
                 onLongPress: (event, timeStamp) {
-                  DBProjectBloc.make('BigTest').then((bloc) {
-                    projectBloc = bloc;
-                    setState(() {
-                      caption = 'Ready';
-                    });
-                  });
+                  make();
                 },
                 height: 60.0,
                 width: 200.0,
@@ -184,13 +187,43 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
     ));
   }
 
-  void listener() {
+  void make() async {
+    if (projectBloc == null) {
+      projectBloc = await DBProjectBloc.make('BigTest');
+    }
+    setState(() {
+      listOfTables = projectBloc.tableList();
+      caption = 'Ready';
+    });
+  }
+
+  void listener() async {
+    /// DBRecord returned by UI when a record is selected
+    /// Redraws the input line with that data
+    inputSelectedStream.stream.listen((dbRecord) {
+      try {
+        assert(dbRecord != null);
+        final fieldInput = FieldInput.fromDB(record: dbRecord);
+        assert(fieldInput.validate() == null);
+        tableName = dbRecord.name;
+        setState(() {
+          tabletInputLine = TabletInputLine(fieldInput: fieldInput, sink: inputCompleteStream.sink);
+        });
+      } catch (err) {
+        Log.e(err.toString());
+      }
+    });
+
     inputCompleteStream.stream.listen((event) {
-      Log.t(event.toString(), true, '#T');
-      projectBloc.add(fieldInput: event, toTable: tableName);
-      setState(() {
-        tabletInputLine = TabletInputLine(fieldInput: FieldInput(), sink: inputCompleteStream.sink);
-      });
+      try {
+        projectBloc.add(fieldInput: event, toTable: tableName);
+        setState(() {
+          tabletInputLine = TabletInputLine(fieldInput: FieldInput(), sink: inputCompleteStream.sink);
+          listOfTables = projectBloc.tableList();
+        });
+      } catch (err) {
+        Log.e(err.toString());
+      }
     });
   }
 }
