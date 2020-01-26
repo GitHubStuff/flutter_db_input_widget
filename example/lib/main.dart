@@ -204,7 +204,7 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
       try {
         assert(dbRecord != null);
         final fieldInput = FieldInput.fromDB(record: dbRecord);
-        assert(fieldInput.validate() == null);
+        //assert(fieldInput.validate() == null);
         tableName = dbRecord.name;
         setState(() {
           tabletInputLine = TabletInputLine(fieldInput: fieldInput, sink: inputCompleteStream.sink);

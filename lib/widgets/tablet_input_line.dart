@@ -15,6 +15,7 @@ import '../src/field_input.dart';
 
 const _TAB = 9;
 
+/// A broadcast stream to handle when a complete field/column description has been completed
 class InputCompleteStream extends BroadcastStream<FieldInput> {
   @override
   void dispose() {
@@ -22,6 +23,7 @@ class InputCompleteStream extends BroadcastStream<FieldInput> {
   }
 }
 
+/// A broadcast stream to handle pre-loading the ui input fields with an existing field/column description
 class InputSelectedStream extends BroadcastStream<DBRecord> {
   @override
   void dispose() {
@@ -29,6 +31,8 @@ class InputSelectedStream extends BroadcastStream<DBRecord> {
   }
 }
 
+/// Widget that will display input fields to collect the columnName, json tag, data type, target table(if any), and comment
+/// text the user inputs.
 class TabletInputLine extends StatefulWidget {
   final FieldInput fieldInput;
   final Sink<FieldInput> sink;
@@ -36,7 +40,6 @@ class TabletInputLine extends StatefulWidget {
       : assert(fieldInput != null),
         assert(sink != null),
         super(key: key);
-  static const route = '/tabletInputLine';
 
   @override
   _TabletInputLine createState() => _TabletInputLine();
@@ -51,8 +54,7 @@ class _TabletInputLine extends State<TabletInputLine> with WidgetsBindingObserve
   // r - double
   // s - string
   FieldInput fieldInput;
-  List<FocusNode> focusNodes;
-  List<TextEditingController> textEditingControllers;
+  final formKey = GlobalKey<FormState>();
   bool showTableColumn = false;
 
   Widget columnField, columnJson, columnDataType, columnTable, columnComment;
@@ -129,37 +131,35 @@ class _TabletInputLine extends State<TabletInputLine> with WidgetsBindingObserve
     Log.t('tabletInputLine dispose');
     WidgetsBinding.instance.removeObserver(this);
 
-    /// Required house keeping on disposing of FocusNodes and TextEditingControllers
-    for (FocusNode node in focusNodes) {
-      node?.dispose();
-    }
-    for (TextEditingController controller in textEditingControllers) {
-      controller?.dispose();
-    }
+    fieldInput?.dispose();
+
     super.dispose();
   }
 
   /// Scaffold body
   Widget body() {
-    return Row(
-      children: [
-        columnField,
-        columnJson,
-        columnDataType,
-        Visibility(
-          child: columnTable,
-          visible: showTableColumn,
-        ),
-        columnComment,
-      ],
+    return Form(
+      child: Row(
+        children: [
+          columnField,
+          columnJson,
+          columnDataType,
+          Visibility(
+            child: columnTable,
+            visible: showTableColumn,
+          ),
+          columnComment,
+        ],
+      ),
+      key: formKey,
     );
   }
 
   /// Weird hack to get the keyboard to focus/appear on the first field of the form.
   void setFocus() {
-    Future.delayed(Duration(milliseconds: 250), () {
-      FocusScope.of(context).requestFocus(focusNodes[0]);
-      FocusScope.of(context).requestFocus(focusNodes[0]);
+    Future.delayed(Duration(milliseconds: 200), () {
+      FocusScope.of(context).requestFocus(fieldInput.focusNode(forIndex: FieldInput.indexField));
+      FocusScope.of(context).requestFocus(fieldInput.focusNode(forIndex: FieldInput.indexField));
     });
   }
 
@@ -176,43 +176,44 @@ class _TabletInputLine extends State<TabletInputLine> with WidgetsBindingObserve
   /// Creates the widgets that make up the columns, uses a 'template' to reduce redundant code
   void columns(FieldInput source) {
     fieldInput = source;
-    focusNodes = List();
-    textEditingControllers = List();
-    columnField = input(index: 0, flex: 5, value: fieldInput?.field ?? '');
-    columnJson = input(index: 1, flex: 5, value: fieldInput?.json ?? '');
-    columnDataType = dateTypeColumn(index: 2, flex: 2, value: fieldInput?.type ?? '');
-    columnTable = input(index: 3, flex: 5, value: fieldInput?.target ?? '');
-    columnComment = input(index: 4, flex: 10, fieldSink: widget.sink, value: fieldInput?.comment ?? '');
+    columnField = fieldInputWidget(index: FieldInput.indexField, flex: 5, value: fieldInput?.field ?? '');
+    columnJson = fieldInputWidget(index: FieldInput.indexJson, flex: 5, value: fieldInput?.json ?? '');
+    columnDataType = dataTypeColumn(index: FieldInput.indexDataType, flex: 2, value: fieldInput?.type ?? '');
+    columnTable = fieldInputWidget(index: FieldInput.indexTarget, flex: 5, value: fieldInput?.target ?? '');
+    columnComment =
+        fieldInputWidget(index: FieldInput.indexComment, flex: 10, fieldSink: widget.sink, value: fieldInput?.comment ?? '');
   }
 
   /// Template to create an input column
   /// NOTE: The last column must have handler for (tab/enter) from the keyboard. The design being that 'TAB'
   /// will create a new row for the same table and 'Enter/Return' will mean a new table is to be created.
   /// NOTE: All fields but the last one CANNOT be empty, the cursor will not advance on 'TAB' or 'ENTER'
-  Widget input({
+  Widget fieldInputWidget({
     @required int index,
     @required int flex,
     Sink<FieldInput> fieldSink,
     @required String value,
   }) {
-    final focusNode = FocusNode(debugLabel: fieldInput.fields[index]);
-    final textController = TextEditingController();
-    focusNodes.add(focusNode);
-    textEditingControllers.add(textController);
+    final focusNode = fieldInput.focusNode(forIndex: index);
+    final textController = fieldInput.textEditingController(forIndex: index);
     textController.text = value;
     return Flexible(
       child: Padding(
         child: TextFormField(
           autocorrect: fieldSink != null,
           controller: textController,
-          decoration: InputDecoration(labelText: fieldInput.fields[index]),
+          decoration: InputDecoration(labelText: fieldInput.fieldName(forIndex: index)),
           enableSuggestions: fieldSink != null,
-          focusNode: focusNodes[index],
+          focusNode: focusNode,
           onChanged: (string) {
             handlerAdvance(text: string, isTabbed: true, index: index, sink: fieldSink);
           },
           onFieldSubmitted: (string) {
             handlerAdvance(text: string, isTabbed: false, index: index, sink: fieldSink);
+          },
+          textInputAction: (fieldSink == null) ? TextInputAction.next : TextInputAction.done,
+          validator: (text) {
+            return fieldInput.validateAt(index: index);
           },
         ),
         padding: EdgeInsets.symmetric(horizontal: 8.0),
@@ -224,23 +225,25 @@ class _TabletInputLine extends State<TabletInputLine> with WidgetsBindingObserve
   void handlerAdvance({@required String text, @required bool isTabbed, @required int index, @required Sink<FieldInput> sink}) {
     if ((text.isEmpty || text == '\t') && sink == null) {
       Future.delayed(Duration(milliseconds: 200), () {
-        textEditingControllers[index].text = '';
-        FocusScope.of(context).requestFocus(focusNodes[index]);
+        fieldInput.textEditingController(forIndex: index).text = '';
+        FocusScope.of(context).requestFocus(fieldInput.focusNode(forIndex: index));
       });
       return;
     }
     final chr = text.runes.toList().last;
     if (chr == _TAB || !isTabbed) {
       final putString = fieldInput.setIndex(index, string: text);
-      textEditingControllers[index].text = putString;
+      fieldInput.textEditingController(forIndex: index).text = putString;
 
       /// If the 'Enter/Return' key was pressed but there is no handler, then just advance to the next field
       if (sink == null) {
-        FocusScope.of(context).requestFocus(focusNodes[index + 1]);
+        FocusScope.of(context).requestFocus(fieldInput.focusNode(forIndex: fieldInput.nextFieldIndex(forIndex: index)));
       } else {
         /// If here, the last field received a 'Return/Enter' so the call back will report it was 'tabbed' out.
-        fieldInput.tabbedOut = isTabbed;
-        sink.add(fieldInput);
+        if (formKey.currentState.validate()) {
+          fieldInput.tabbedOut = isTabbed;
+          sink.add(fieldInput);
+        }
       }
     }
   }
@@ -248,17 +251,15 @@ class _TabletInputLine extends State<TabletInputLine> with WidgetsBindingObserve
   /// The dataTypeColumn is just a single letter for types (array, bool, class, datetime, int, real, string) so
   /// a special widget that handles only a single character is needed to ensure the type matches the allowed
   /// types and to show/hide the 'tableName column' that is associated with 'array' and 'class' types
-  Widget dateTypeColumn({@required int index, @required int flex, @required String value}) {
-    final focusNode = FocusNode(debugLabel: fieldInput.fields[index]);
-    focusNodes.add(focusNode);
-    final controller = TextEditingController();
-    textEditingControllers.add(controller);
+  Widget dataTypeColumn({@required int index, @required int flex, @required String value}) {
+    final focusNode = fieldInput.focusNode(forIndex: index);
+    final controller = fieldInput.textEditingController(forIndex: index);
     controller.text = value;
     return Flexible(
       child: Padding(
         child: TextFormField(
           controller: controller,
-          decoration: InputDecoration(labelText: fieldInput.fields[index]),
+          decoration: InputDecoration(labelText: fieldInput.fieldName(forIndex: index)),
           focusNode: focusNode,
           onChanged: (string) {
             while (string.length > 1) {
@@ -266,12 +267,13 @@ class _TabletInputLine extends State<TabletInputLine> with WidgetsBindingObserve
             }
             if (!FieldInput.isDataTypes(string)) {
               Future.delayed(Duration(milliseconds: 200), () {
-                textEditingControllers[index].text = '';
+                controller.text = '';
               });
             } else {
-              textEditingControllers[index].text = fieldInput.setIndex(index, string: string);
+              controller.text = fieldInput.setIndex(index, string: string);
               setVisibility(fieldInput);
-              final nextFocus = FieldInput.isComplex(string) ? focusNodes[index + 1] : focusNodes[index + 2];
+              final nextIndex = FieldInput.isComplex(string) ? FieldInput.indexTarget : FieldInput.indexComment;
+              final nextFocus = fieldInput.focusNode(forIndex: nextIndex);
               Future.delayed(Duration(milliseconds: 200), () {
                 FocusScope.of(context).requestFocus(nextFocus);
               });
@@ -280,6 +282,7 @@ class _TabletInputLine extends State<TabletInputLine> with WidgetsBindingObserve
           onFieldSubmitted: (string) {
             throw Exception('Should not reach here!');
           },
+          textInputAction: TextInputAction.next,
         ),
         padding: EdgeInsets.symmetric(horizontal: 8.0),
       ),

@@ -67,8 +67,8 @@ class DBProjectBloc with JsonData {
   void add({@required FieldInput fieldInput, @required String toTable}) {
     assert(fieldInput != null);
     assert(toTable != null && toTable.isNotEmpty);
-    final String validate = fieldInput.validate();
-    assert(validate == null, '$validate');
+//    final String validate = fieldInput.validate();
+//    assert(validate == null, '$validate');
     int index = find(field: fieldInput.field, inTable: toTable);
 
     /// Put the field information in class with its parent table information and replace
