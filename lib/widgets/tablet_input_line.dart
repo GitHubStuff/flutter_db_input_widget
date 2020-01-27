@@ -128,11 +128,8 @@ class _TabletInputLine extends State<TabletInputLine> with WidgetsBindingObserve
 
   @override
   void dispose() {
-    Log.t('tabletInputLine dispose');
+    Log.t('tabletInputLine dispose()');
     WidgetsBinding.instance.removeObserver(this);
-
-    fieldInput?.dispose();
-
     super.dispose();
   }
 
@@ -197,6 +194,8 @@ class _TabletInputLine extends State<TabletInputLine> with WidgetsBindingObserve
     final focusNode = fieldInput.focusNode(forIndex: index);
     final textController = fieldInput.textEditingController(forIndex: index);
     textController.text = value;
+    Log.f('Does this work?');
+    if (!mounted) return null;
     return Flexible(
       child: Padding(
         child: TextFormField(

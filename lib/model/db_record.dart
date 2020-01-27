@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_db_input_widget/src/broadcast_stream.dart';
 import 'package:flutter_db_input_widget/src/field_input.dart';
-import 'package:flutter_db_input_widget/widgets/record_widget.dart';
+import 'package:flutter_theme_package/flutter_theme_package.dart' as UI;
 
 /// This class represents the information that is used to generate dart code for tables and fields
 /// in the table. Arrays of this class are stored in .json text files to serve as the blue-print
@@ -72,25 +72,27 @@ class DBRecord with JsonData {
     return result;
   }
 
-  static List<DataColumn> dataColumns() {
+  static List<DataColumn> dataColumns(BuildContext context) {
+    TextStyle textStyle = TextStyle(fontSize: UI.getTextSizes(UI.TextSizes.display1));
     List<DataColumn> columns = List();
-    columns.add(DataColumn(label: Text('Select')));
-    columns.add(DataColumn(label: Text('Table')));
-    columns.add(DataColumn(label: Text('Field')));
-    columns.add(DataColumn(label: Text('Json')));
-    columns.add(DataColumn(label: Text('Type')));
-    columns.add(DataColumn(label: Text('Target')));
-    columns.add(DataColumn(label: Text('Comment')));
+    columns.add(DataColumn(label: Text('Select', style: textStyle)));
+    columns.add(DataColumn(label: Text('Table', style: textStyle)));
+    columns.add(DataColumn(label: Text('Field', style: textStyle)));
+    columns.add(DataColumn(label: Text('Json', style: textStyle)));
+    columns.add(DataColumn(label: Text('Type', style: textStyle)));
+    columns.add(DataColumn(label: Text('Target', style: textStyle)));
+    columns.add(DataColumn(label: Text('Comment', style: textStyle)));
     return columns;
   }
 
   List<DataCell> dataCells(
     BuildContext context, {
     @required int index,
-    @required FieldSelect fieldSelect,
+    @required Sink<DBRecord> sink,
     @required TextStyle style,
   }) {
-    style ??= Theme.of(context).textTheme.title;
+    assert(sink != null);
+    style ??= TextStyle(fontSize: UI.getTextSizes(UI.TextSizes.headline));
     List<DataCell> cells = List();
     final button = IconButton(
       icon: Icon(
@@ -99,16 +101,37 @@ class DBRecord with JsonData {
         semanticLabel: 'Adjust',
       ),
       onPressed: () {
-        fieldSelect(index, this);
+        sink.add(this);
       },
     );
     cells.add(DataCell(button));
     cells.add(DataCell(Text(name, style: style)));
     cells.add(DataCell(Text(field, style: style)));
     cells.add(DataCell(Text(json, style: style)));
-    cells.add(DataCell(Text(type, style: style)));
+    cells.add(DataCell(Text(typeDetail(), style: style)));
     cells.add(DataCell(Text(target, style: style)));
     cells.add(DataCell(Text(comment, style: style)));
     return cells;
+  }
+
+  String typeDetail() {
+    switch (type) {
+      case 'a':
+        return 'array';
+      case 'b':
+        return 'bool';
+      case 'c':
+        return 'class';
+      case 'd':
+        return 'date';
+      case 'i':
+        return 'int';
+      case 'r':
+        return 'double/float';
+      case 's':
+        return 'string';
+      default:
+        throw Exception('Cannot detail type <$type>');
+    }
   }
 }

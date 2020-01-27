@@ -81,7 +81,7 @@ class FieldInput {
   }
 
   void dispose() {
-    Log.t('field_input.dart dispose()');
+    Log.w('field_input.dart dispose()');
     for (FocusNode focusNode in _focusNodes) {
       focusNode.dispose();
     }

@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_db_input_widget/io/db_project_io.dart' as File;
 import 'package:flutter_db_input_widget/model/db_record.dart';
 import 'package:flutter_db_input_widget/src/broadcast_stream.dart';
-import 'package:flutter_db_input_widget/widgets/record_widget.dart';
 
 import '../flutter_db_input_widget.dart';
 
@@ -103,11 +102,11 @@ class DBProjectBloc with JsonData {
     await _dbProjectIO.writeProject(contents: data);
   }
 
-  List<DataRow> dataRows(BuildContext context, {@required FieldSelect fieldSelect, @required TextStyle style}) {
+  List<DataRow> dataRows(BuildContext context, {@required Sink<DBRecord> sink, @required TextStyle style}) {
     List<DataRow> rows = List();
     List<DBRecord> records = sortedTableList();
     for (int i = 0; i < records.length; i++) {
-      final row = records[i].dataCells(context, index: i, fieldSelect: fieldSelect, style: style);
+      final row = records[i].dataCells(context, index: i, sink: sink, style: style);
       rows.add(DataRow(cells: row));
     }
     return rows;

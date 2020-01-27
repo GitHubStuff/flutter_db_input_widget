@@ -4,6 +4,7 @@ import 'package:flutter_db_input_widget/flutter_db_input_widget.dart';
 import 'package:flutter_db_input_widget/model/db_record.dart';
 import 'package:flutter_theme_package/flutter_theme_package.dart';
 import 'package:flutter_tracers/trace.dart' as Log;
+import 'package:keyboard_visibility/keyboard_visibility.dart';
 import 'package:notifier/notifier_provider.dart';
 
 void main() {
@@ -42,11 +43,16 @@ class Example extends StatefulWidget {
 }
 
 class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMixin<Example> {
+  // ignore: non_constant_identifier_names
+  Size get ScreenSize => MediaQuery.of(context).size;
+
   bool hideSpinner = true;
   String caption = 'Start';
   int counter = 0;
+  double listHeight = 300.0;
   DBProjectBloc projectBloc;
   String tableName = 'VeryFirst';
+  KeyboardVisibilityNotification keyboardVisibilityNotification = KeyboardVisibilityNotification();
   List<DBRecord> listOfTables = List();
 
   FieldInput fieldInput = FieldInput();
@@ -59,12 +65,22 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
     WidgetsBinding.instance.addObserver(this);
     Log.t('example initState');
     tabletInputLine = TabletInputLine(fieldInput: fieldInput, sink: inputCompleteStream.sink);
+    keyboardVisibilityNotification.addNewListener(onShow: () {
+      setState(() {
+        listHeight = ScreenSize.height * 0.25;
+        Log.f('main.dart show listHeight $listHeight');
+      });
+    }, onHide: () {
+      Log.v('main.dart onHide');
+      expand();
+    });
   }
 
   @override
   didChangeDependencies() {
     super.didChangeDependencies();
     Log.t('example didChangeDependencies');
+    Log.v('example didChangeDependencies => $listHeight');
   }
 
   @override
@@ -82,6 +98,7 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
   @override
   void afterFirstLayout(BuildContext context) {
     Log.t('example afterFirstLayout');
+    expand();
     make();
     listener();
   }
@@ -136,11 +153,13 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
     Log.t('example dispose');
     WidgetsBinding.instance.removeObserver(this);
     inputCompleteStream.dispose();
+    keyboardVisibilityNotification.dispose();
     super.dispose();
   }
 
   /// Scaffold body
   Widget body() {
+    Log.v('body() didChangeDependencies => $listHeight');
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -153,14 +172,11 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
         projectBloc == null
             ? CircularProgressIndicator()
             : Container(
-                height: 300.0,
+                height: listHeight,
                 child: SingleChildScrollView(
-                  child: SizedBox(
-                    height: 300.0,
-                    child: DataTable(
-                      columns: DBRecord.dataColumns(),
-                      rows: projectBloc.dataRows(context, fieldSelect: null, style: null),
-                    ),
+                  child: DataTable(
+                    columns: DBRecord.dataColumns(context),
+                    rows: projectBloc.dataRows(context, sink: inputSelectedStream.sink, style: null),
                   ),
                 ),
               ),
@@ -176,6 +192,7 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
                   projectBloc.writeTablesToFile(prettyPrint: true).then((_) {
                     setState(() {
                       caption = 'Done!!';
+                      expand();
                     });
                   });
                 },
@@ -217,8 +234,8 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
     inputSelectedStream.stream.listen((dbRecord) {
       try {
         assert(dbRecord != null);
-        final fieldInput = FieldInput.fromDB(record: dbRecord);
-        //assert(fieldInput.validate() == null);
+        fieldInput?.dispose();
+        fieldInput = FieldInput.fromDB(record: dbRecord);
         tableName = dbRecord.name;
         setState(() {
           tabletInputLine = TabletInputLine(fieldInput: fieldInput, sink: inputCompleteStream.sink);
@@ -238,6 +255,13 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
       } catch (err) {
         Log.e(err.toString());
       }
+    });
+  }
+
+  void expand() {
+    setState(() {
+      listHeight = ScreenSize.height * 0.70;
+      Log.v('main.dart expand $listHeight');
     });
   }
 }

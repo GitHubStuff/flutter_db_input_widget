@@ -1,8 +1,7 @@
 name: flutter_db_input_widget
 description: A Widget for flutter_db_builder
-version: 0.0.1
-author:
-homepage:
+version: 0.0.2
+homepage: https://www.silversphere.com
 
 environment:
   sdk: '>=2.2.0 <3.0.0'
