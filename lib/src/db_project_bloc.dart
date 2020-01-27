@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_db_input_widget/io/db_project_io.dart' as File;
 import 'package:flutter_db_input_widget/model/db_record.dart';
 import 'package:flutter_db_input_widget/src/broadcast_stream.dart';
+import 'package:flutter_db_input_widget/widgets/record_widget.dart';
 
 import '../flutter_db_input_widget.dart';
 
@@ -14,6 +15,10 @@ import '../flutter_db_input_widget.dart';
 /// dart code.
 ///
 class DBProjectBloc with JsonData {
+  /// Used as keys in for json text to avoid typo's when using literal strings
+  static const _Name = 'name';
+  static const _Tables = 'tables';
+
   /// The umbrellas name of the project, it serves as the root name of the .json file
   /// created with the table and fields blueprints.
   final String name;
@@ -21,7 +26,7 @@ class DBProjectBloc with JsonData {
   /// The list of tables, and field descriptions for all the tables used within a single app
   List<DBRecord> _tables = List();
 
-  List<DBRecord> tableList() {
+  List<DBRecord> sortedTableList() {
     List<DBRecord> temp = List.from(_tables);
     temp.sort((a, b) => (a.name + a.field).toLowerCase().compareTo((b.name + b.field).toLowerCase()));
     return temp;
@@ -49,8 +54,8 @@ class DBProjectBloc with JsonData {
   /// Factory method where .json file from the local store that has been converted into a Map
   /// can be used to create an instance of the project
   factory DBProjectBloc.fromJson(Map<String, dynamic> map) {
-    final result = DBProjectBloc(name: map['name']);
-    final tables = map['tables'];
+    final result = DBProjectBloc(name: map[_Name]);
+    final tables = map[_Tables];
     result._tables = (tables as List).map((item) => DBRecord.fromJson(item)).toList();
     return result;
   }
@@ -58,8 +63,8 @@ class DBProjectBloc with JsonData {
   /// This map, converted to string, will be the content of the .json file stored on device.
   @override
   Map<String, dynamic> toJson() => {
-        'name': name,
-        'tables': _tables,
+        _Name: name,
+        _Tables: _tables,
       };
 
   /// Data from the UI with the design of a column of a database table is passed in
@@ -67,8 +72,6 @@ class DBProjectBloc with JsonData {
   void add({@required FieldInput fieldInput, @required String toTable}) {
     assert(fieldInput != null);
     assert(toTable != null && toTable.isNotEmpty);
-//    final String validate = fieldInput.validate();
-//    assert(validate == null, '$validate');
     int index = find(field: fieldInput.field, inTable: toTable);
 
     /// Put the field information in class with its parent table information and replace
@@ -98,5 +101,15 @@ class DBProjectBloc with JsonData {
     _tables.sort((a, b) => (a.name + a.field).toLowerCase().compareTo((b.name + b.field).toLowerCase()));
     String data = dataString(prettyPrint: prettyPrint ?? false);
     await _dbProjectIO.writeProject(contents: data);
+  }
+
+  List<DataRow> dataRows(BuildContext context, {@required FieldSelect fieldSelect, @required TextStyle style}) {
+    List<DataRow> rows = List();
+    List<DBRecord> records = sortedTableList();
+    for (int i = 0; i < records.length; i++) {
+      final row = records[i].dataCells(context, index: i, fieldSelect: fieldSelect, style: style);
+      rows.add(DataRow(cells: row));
+    }
+    return rows;
   }
 }

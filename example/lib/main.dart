@@ -141,15 +141,29 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
 
   /// Scaffold body
   Widget body() {
-    return Center(
-        child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         tabletInputLine,
-        DisplayRecordsWidget(
-          sink: inputSelectedStream.sink,
-          tables: listOfTables,
-        ),
+//        DisplayRecordsWidget(
+//          sink: inputSelectedStream.sink,
+//          tables: listOfTables,
+//        ),
+        projectBloc == null
+            ? CircularProgressIndicator()
+            : Container(
+                height: 300.0,
+                child: SingleChildScrollView(
+                  child: SizedBox(
+                    height: 300.0,
+                    child: DataTable(
+                      columns: DBRecord.dataColumns(),
+                      rows: projectBloc.dataRows(context, fieldSelect: null, style: null),
+                    ),
+                  ),
+                ),
+              ),
         Row(
           children: [
             Padding(
@@ -184,7 +198,7 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
           ],
         )
       ],
-    ));
+    );
   }
 
   void make() async {
@@ -192,7 +206,7 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
       projectBloc = await DBProjectBloc.make('BigTest');
     }
     setState(() {
-      listOfTables = projectBloc.tableList();
+      listOfTables = projectBloc.sortedTableList();
       caption = 'Ready';
     });
   }
@@ -219,7 +233,7 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
         projectBloc.add(fieldInput: event, toTable: tableName);
         setState(() {
           tabletInputLine = TabletInputLine(fieldInput: FieldInput(), sink: inputCompleteStream.sink);
-          listOfTables = projectBloc.tableList();
+          listOfTables = projectBloc.sortedTableList();
         });
       } catch (err) {
         Log.e(err.toString());

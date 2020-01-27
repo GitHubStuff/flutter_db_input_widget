@@ -237,7 +237,7 @@ class _TabletInputLine extends State<TabletInputLine> with WidgetsBindingObserve
 
       /// If the 'Enter/Return' key was pressed but there is no handler, then just advance to the next field
       if (sink == null) {
-        FocusScope.of(context).requestFocus(fieldInput.focusNode(forIndex: fieldInput.nextFieldIndex(forIndex: index)));
+        FocusScope.of(context).requestFocus(fieldInput.nextFocusNode(forIndex: index));
       } else {
         /// If here, the last field received a 'Return/Enter' so the call back will report it was 'tabbed' out.
         if (formKey.currentState.validate()) {

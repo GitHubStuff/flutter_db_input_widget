@@ -6,6 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_db_input_widget/model/db_record.dart';
 import 'package:flutter_tracers/trace.dart' as Log;
 
+/// Widget to display list of tables and fields in a list view, with a icon button to select a field to
+/// edit.
+
 typedef void FieldSelect(int index, DBRecord record);
 
 class RecordWidget extends StatefulWidget {

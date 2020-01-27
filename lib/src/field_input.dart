@@ -9,32 +9,44 @@ class FieldInput {
   static bool isDataTypes(String type) => _DataTypes.contains(type);
   static bool isComplex(String type) => (type == 'a' || type == 'c');
 
+  /// Use of regex expressions to make sure fields are valid to simplify input checking.
   static final _validCharacters = RegExp(r'^[a-zA-Z0-9_]+$');
   static final _validEnd = RegExp(r'^[a-zA-Z0-9]+$');
   static final _validStart = RegExp(r'^[a-zA-Z_]+$');
 
+  /// Static constants are used to identify the input fields, this allows a reordering without a full refactor of most
+  /// of the code in the TabletInputLine widget.
   static const indexField = 0;
   static const indexJson = 1;
   static const indexDataType = 2;
   static const indexTarget = 3;
   static const indexComment = 4;
 
+  /// Properties of the items in the input form field, arrays are used to allow for re-ordering of input fields
   List<String> _items;
   List<String> _fieldsNames = List();
   List<FocusNode> _focusNodes = List();
   List<TextEditingController> _textEditControllers = List();
 
+  /// Helpers to return string, focus, and controllers for fields by using indexes to allow for re-ordering of fields
   String fieldName({@required int forIndex}) => _fieldsNames[forIndex];
   FocusNode focusNode({@required int forIndex}) => _focusNodes[forIndex];
   TextEditingController textEditingController({@required int forIndex}) => _textEditControllers[forIndex];
 
+  /// If the input was completed by the user hitting 'TAB', the UI should collect the fields, and present a new and
+  /// empty form for the next field. If the user taps 'Enter' then a new table should prompted for an then present
+  /// the input form with data going to the new table info.
   bool tabbedOut = false;
+
+  /// Simple helpers to improve readability of code so that field names are clearing then an index.
   String get field => _items[indexField];
   String get json => _items[indexJson];
   String get type => _items[indexDataType];
-  String get target => (type == 'a' || type == 'c') ? _items[indexTarget] : '';
+  String get target => (isComplex(type)) ? _items[indexTarget] : '';
   String get comment => _items[indexComment];
 
+  /// Perform syntax check on fields that cannot have blanks, must be only letters, numbers, underscore, and
+  /// that do not end with underscore, the returned text is used in form validators
   static String _validField(String text) {
     if (text.isEmpty) return 'Cannot be blank';
     var test = text.substring(0, 1);
@@ -45,6 +57,9 @@ class FieldInput {
     return null;
   }
 
+  ///* Constructor
+  /// fieldNames is the text that appears above the TextInput fields. The number of names also defines the
+  /// collection
   FieldInput({fieldNames = const ['Field', 'Json', 'a,b,c,d,i,r,s', 'Table', 'Comment']})
       : assert(fieldNames != null && fieldNames.length > 0) {
     _items = List.filled(fieldNames.length, '');
@@ -75,9 +90,11 @@ class FieldInput {
     }
   }
 
-  int nextFieldIndex({@required int forIndex}) {
+  FocusNode nextFocusNode({@required int forIndex}) {
     assert(forIndex >= 0, 'field_input.dart nextField index ${forIndex.toString()}');
-    return forIndex + 1;
+    assert(forIndex < _focusNodes.length, 'field_input.dart nextField index ${forIndex.toString()} > ${_focusNodes.length}');
+    if (forIndex != indexDataType) return _focusNodes[forIndex + 1];
+    return isComplex(type) ? _focusNodes[indexTarget] : _focusNodes[indexComment];
   }
 
   String validateAt({@required int index}) {
