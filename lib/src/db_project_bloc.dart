@@ -25,9 +25,17 @@ class DBProjectBloc with JsonData {
   /// The list of tables, and field descriptions for all the tables used within a single app
   List<DBRecord> _tables = List();
 
-  List<DBRecord> sortedTableList() {
+  /// Providing a table name will keep records of that table at the top of the list, good when
+  /// the UI is showing most recently added fields
+  List<DBRecord> sortedTableList([String selectedTable = '']) {
+    final fav = (selectedTable ?? '').toLowerCase();
     List<DBRecord> temp = List.from(_tables);
-    temp.sort((a, b) => (a.name + a.field).toLowerCase().compareTo((b.name + b.field).toLowerCase()));
+    temp.sort((a, b) {
+      final aKey = (a.name.toLowerCase() == fav) ? '0' + a.name : '1' + a.name;
+      final bKey = (b.name.toLowerCase() == fav) ? '0' + b.name : '1' + b.name;
+      return (aKey + a.field).toLowerCase().compareTo((bKey + b.field).toLowerCase());
+    });
+
     return temp;
   }
 
@@ -102,9 +110,10 @@ class DBProjectBloc with JsonData {
     await _dbProjectIO.writeProject(contents: data);
   }
 
-  List<DataRow> dataRows(BuildContext context, {@required Sink<DBRecord> sink, @required TextStyle style}) {
+  List<DataRow> dataRows(BuildContext context,
+      {@required String preferTable, @required Sink<DBRecord> sink, @required TextStyle style}) {
     List<DataRow> rows = List();
-    List<DBRecord> records = sortedTableList();
+    List<DBRecord> records = sortedTableList(preferTable);
     for (int i = 0; i < records.length; i++) {
       final row = records[i].dataCells(context, index: i, sink: sink, style: style);
       rows.add(DataRow(cells: row));

@@ -51,7 +51,7 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
   int counter = 0;
   double listHeight = 300.0;
   DBProjectBloc projectBloc;
-  String tableName = 'VeryFirst';
+  String tableName;
   KeyboardVisibilityNotification keyboardVisibilityNotification = KeyboardVisibilityNotification();
   List<DBRecord> listOfTables = List();
 
@@ -59,6 +59,8 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
   TabletInputLine tabletInputLine;
   InputCompleteStream inputCompleteStream = InputCompleteStream();
   InputSelectedStream inputSelectedStream = InputSelectedStream();
+  TableNameStream tableNameStream = TableNameStream();
+
   @override
   void initState() {
     super.initState();
@@ -154,6 +156,7 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
     WidgetsBinding.instance.removeObserver(this);
     inputCompleteStream.dispose();
     keyboardVisibilityNotification.dispose();
+    tableNameStream.dispose();
     super.dispose();
   }
 
@@ -164,11 +167,17 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        tabletInputLine,
-//        DisplayRecordsWidget(
-//          sink: inputSelectedStream.sink,
-//          tables: listOfTables,
-//        ),
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Container(
+            child: TableNameInputForm(
+              sink: tableNameStream.sink,
+              tableName: tableName,
+            ),
+            width: ScreenSize.width * 0.30,
+          ),
+        ),
+        (tableName == null || FieldInput.validateTable(name: tableName) != null) ? CircularProgressIndicator() : tabletInputLine,
         projectBloc == null
             ? CircularProgressIndicator()
             : Container(
@@ -176,7 +185,12 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
                 child: SingleChildScrollView(
                   child: DataTable(
                     columns: DBRecord.dataColumns(context),
-                    rows: projectBloc.dataRows(context, sink: inputSelectedStream.sink, style: null),
+                    rows: projectBloc.dataRows(
+                      context,
+                      preferTable: tableName,
+                      sink: inputSelectedStream.sink,
+                      style: null,
+                    ),
                   ),
                 ),
               ),
@@ -229,6 +243,12 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
   }
 
   void listener() async {
+    tableNameStream.stream.listen((newName) {
+      setState(() {
+        tableName = newName;
+      });
+    });
+
     /// DBRecord returned by UI when a record is selected
     /// Redraws the input line with that data
     inputSelectedStream.stream.listen((dbRecord) {

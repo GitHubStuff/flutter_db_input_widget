@@ -31,6 +31,13 @@ class InputSelectedStream extends BroadcastStream<DBRecord> {
   }
 }
 
+class TableNameStream extends BroadcastStream<String> {
+  @override
+  void dispose() {
+    close();
+  }
+}
+
 /// Widget that will display input fields to collect the columnName, json tag, data type, target table(if any), and comment
 /// text the user inputs.
 class TabletInputLine extends StatefulWidget {
@@ -102,7 +109,7 @@ class _TabletInputLine extends State<TabletInputLine> with WidgetsBindingObserve
     return body();
   }
 
-  /// Stumbled on this one.... after the fields have been field out and to clear
+  /// Stumbled on this one.... after the fields have been tabbed out and to clear
   /// and reset, 'didUpdateWidget' is called when a new instance of the this widget
   /// is created. The render engine doesn't rebuild the widget on create but calls
   /// this method when an empty FieldInput IS passed when a new widget it created.

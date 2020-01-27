@@ -48,13 +48,18 @@ class FieldInput {
   /// Perform syntax check on fields that cannot have blanks, must be only letters, numbers, underscore, and
   /// that do not end with underscore, the returned text is used in form validators
   static String _validField(String text) {
-    if (text.isEmpty) return 'Cannot be blank';
+    if (text == null) return 'Cannot be null';
+    if (text.trim().isEmpty) return 'Cannot be blank';
     var test = text.substring(0, 1);
     if (!_validStart.hasMatch(test)) return 'Invalid start character $test';
     test = text.substring(text.length - 1);
     if (!_validEnd.hasMatch(test)) return 'Invalid end character $test';
     if (!_validCharacters.hasMatch(text)) return 'Only letters and numbers';
     return null;
+  }
+
+  static String validateTable({@required String name}) {
+    return _validField(name);
   }
 
   ///* Constructor
