@@ -58,7 +58,7 @@ class FieldInput {
     return null;
   }
 
-  static String validateTable({@required String name}) {
+  static String validateInputField({@required String name}) {
     return _validField(name);
   }
 

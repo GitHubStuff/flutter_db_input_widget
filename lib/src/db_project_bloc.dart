@@ -25,6 +25,8 @@ class DBProjectBloc with JsonData {
   /// The list of tables, and field descriptions for all the tables used within a single app
   List<DBRecord> _tables = List();
 
+  int get tableCount => _tables.length;
+
   /// Providing a table name will keep records of that table at the top of the list, good when
   /// the UI is showing most recently added fields
   List<DBRecord> sortedTableList([String selectedTable = '']) {

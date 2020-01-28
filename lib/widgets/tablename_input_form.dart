@@ -3,76 +3,86 @@ import 'package:flutter/material.dart';
 import 'package:flutter_db_input_widget/flutter_db_input_widget.dart';
 import 'package:flutter_tracers/trace.dart' as Log;
 
-class TableNameInputForm extends StatefulWidget {
+class NameInputForm extends StatefulWidget {
+  final TextEditingController controller;
+  final FocusNode focusNode;
   final Sink<String> sink;
-  final String tableName;
+  final String fieldName;
   final String title;
-  const TableNameInputForm({Key key, @required this.sink, @required this.tableName, @required this.title})
+  const NameInputForm(
+      {Key key,
+      @required this.controller,
+      @required this.focusNode,
+      @required this.sink,
+      @required this.fieldName,
+      @required this.title})
       : assert(sink != null),
         super(key: key);
 
   @override
-  _TableNameInputForm createState() => _TableNameInputForm();
+  _NameInputForm createState() => _NameInputForm();
 }
 
-class _TableNameInputForm extends State<TableNameInputForm> with WidgetsBindingObserver, AfterLayoutMixin<TableNameInputForm> {
+class _NameInputForm extends State<NameInputForm> with WidgetsBindingObserver, AfterLayoutMixin<NameInputForm> {
   // ignore: non_constant_identifier_names
   Size get ScreenSize => MediaQuery.of(context).size;
   final formKey = GlobalKey<FormState>();
-  final controller = TextEditingController();
+  TextEditingController controller;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    Log.t('tableNameInputForm initState()');
-    controller.text = widget.tableName;
+    Log.t('nameInputForm initState()');
+    controller = widget.controller ?? TextEditingController();
+    controller.text = widget.fieldName;
   }
 
   @override
   void afterFirstLayout(BuildContext context) {
-    Log.t('tableNameInputForm afterFirstLayout()');
+    Log.t('nameInputForm afterFirstLayout()');
+    setFocus();
   }
 
   @override
   didChangeDependencies() {
     super.didChangeDependencies();
-    Log.t('tableNameInputForm didChangeDependencies()');
+    Log.t('nameInputForm didChangeDependencies()');
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    Log.t('tableNameInputForm didChangeAppLifecycleState ${state.toString()}');
+    Log.t('nameInputForm didChangeAppLifecycleState ${state.toString()}');
   }
 
   @override
   void didChangePlatformBrightness() {
     final Brightness brightness = WidgetsBinding.instance.window.platformBrightness;
-    Log.t('tableNameInputForm didChangePlatformBrightness ${brightness.toString()}');
+    Log.t('nameInputForm didChangePlatformBrightness ${brightness.toString()}');
   }
 
   @override
   void didUpdateWidget(Widget oldWidget) {
-    Log.t('tableNameInputForm didUpdateWidget()');
+    Log.t('nameInputForm didUpdateWidget()');
     super.didUpdateWidget(oldWidget);
   }
 
   @override
   void deactivate() {
-    Log.t('tableNameInputForm deactivate()');
+    Log.t('nameInputForm deactivate()');
     super.deactivate();
   }
 
   @override
   void dispose() {
-    Log.t('tableNameInputForm dispose()');
+    Log.t('nameInputForm dispose()');
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    Log.t('tableNameInputForm build()');
+    Log.t('nameInputForm build()');
     return Form(
         child: TextFormField(
           autocorrect: false,
@@ -88,9 +98,19 @@ class _TableNameInputForm extends State<TableNameInputForm> with WidgetsBindingO
           },
           textInputAction: TextInputAction.done,
           validator: (text) {
-            return FieldInput.validateTable(name: text.trim());
+            return FieldInput.validateInputField(name: text.trim());
           },
         ),
         key: formKey);
+  }
+
+  /// Weird hack to get the keyboard to focus/appear on the first field of the form.
+  void setFocus() {
+    if (widget.focusNode == null) return;
+    Log.t('nameInputForm getting focus');
+    Future.delayed(Duration(milliseconds: 200), () {
+      FocusScope.of(context).requestFocus(widget.focusNode);
+      FocusScope.of(context).requestFocus(widget.focusNode);
+    });
   }
 }

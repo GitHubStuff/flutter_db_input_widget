@@ -46,20 +46,21 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
   // ignore: non_constant_identifier_names
   Size get ScreenSize => MediaQuery.of(context).size;
 
-  bool hideSpinner = true;
   String caption = 'Start';
-  int counter = 0;
-  double listHeight = 300.0;
-  DBProjectBloc projectBloc;
-  String tableName;
-  KeyboardVisibilityNotification keyboardVisibilityNotification = KeyboardVisibilityNotification();
-  List<DBRecord> listOfTables = List();
-
   FieldInput fieldInput = FieldInput();
-  TabletInputLine tabletInputLine;
+  bool hideSpinner = true;
   InputCompleteStream inputCompleteStream = InputCompleteStream();
   InputSelectedStream inputSelectedStream = InputSelectedStream();
-  TableNameStream tableNameStream = TableNameStream();
+  KeyboardVisibilityNotification keyboardVisibilityNotification = KeyboardVisibilityNotification();
+  double listHeight = 300.0;
+  List<DBRecord> listOfTables = List();
+  DBProjectBloc projectBloc;
+  TabletInputLine tabletInputLine;
+
+  FieldMeta inputLineInfo;
+  FieldMeta listViewInfo;
+  FieldMeta projectInfo = FieldMeta(name: '');
+  FieldMeta tableNameInfo = FieldMeta(name: '');
 
   @override
   void initState() {
@@ -69,11 +70,11 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
     tabletInputLine = TabletInputLine(fieldInput: fieldInput, sink: inputCompleteStream.sink);
     keyboardVisibilityNotification.addNewListener(onShow: () {
       setState(() {
-        listHeight = ScreenSize.height * 0.25;
+        listHeight = ScreenSize.height * 0.20;
         Log.f('main.dart show listHeight $listHeight');
       });
     }, onHide: () {
-      Log.v('main.dart onHide');
+      Log.v('example onHide');
       expand();
     });
   }
@@ -101,8 +102,8 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
   void afterFirstLayout(BuildContext context) {
     Log.t('example afterFirstLayout');
     expand();
-    make();
     listener();
+    setFocusOn(projectInfo);
   }
 
   @override
@@ -122,8 +123,6 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
           onPressed: () {
             setState(() {
               hideSpinner = false;
-              ++counter;
-              tableName = 'table$counter';
               Future.delayed(Duration(seconds: 3), () {
                 setState(() {
                   hideSpinner = true;
@@ -156,44 +155,78 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
     WidgetsBinding.instance.removeObserver(this);
     inputCompleteStream.dispose();
     keyboardVisibilityNotification.dispose();
-    tableNameStream.dispose();
+
+    inputLineInfo?.dispose();
+    listViewInfo?.dispose();
+    projectInfo.dispose();
+    tableNameInfo?.dispose();
+
     super.dispose();
   }
 
   /// Scaffold body
   Widget body() {
-    Log.v('body() didChangeDependencies => $listHeight');
+    Log.v('main body() didChangeDependencies => $listHeight');
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Container(
-            child: TableNameInputForm(
-              sink: tableNameStream.sink,
-              tableName: tableName,
+        ///Project input field, table name input field
+        Row(
+          children: <Widget>[
+            Container(
+              child: NameInputForm(
+                  focusNode: projectInfo.focusNode,
+                  controller: null,
+                  sink: projectInfo.sink,
+                  fieldName: projectInfo.name,
+                  title: 'Project Name'),
+              width: ScreenSize.width * 0.20,
             ),
-            width: ScreenSize.width * 0.30,
-          ),
+            Container(
+              width: 25,
+            ),
+            Opacity(
+              child: Container(
+                  child: NameInputForm(
+                      focusNode: tableNameInfo.focusNode,
+                      controller: tableNameInfo.controller,
+                      sink: tableNameInfo.sink,
+                      fieldName: tableNameInfo.name,
+                      title: 'Table Name'),
+                  width: ScreenSize.width * 0.20),
+              opacity: projectInfo.opacity,
+            ),
+          ],
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.start,
         ),
-        (tableName == null || FieldInput.validateTable(name: tableName) != null) ? CircularProgressIndicator() : tabletInputLine,
-        projectBloc == null
-            ? CircularProgressIndicator()
-            : Container(
-                height: listHeight,
-                child: SingleChildScrollView(
-                  child: DataTable(
-                    columns: DBRecord.dataColumns(context),
-                    rows: projectBloc.dataRows(
-                      context,
-                      preferTable: tableName,
-                      sink: inputSelectedStream.sink,
-                      style: null,
-                    ),
-                  ),
-                ),
-              ),
+
+        /// Data input line
+        Opacity(
+          child: tabletInputLine,
+          opacity: (projectBloc?.tableCount ?? 0) > 0 ? 1.0 : 0.2,
+        ),
+
+        /// Table of data
+        Opacity(
+          child: Container(
+            height: listHeight,
+            child: SingleChildScrollView(
+              child: (projectInfo.enabled && projectBloc != null)
+                  ? DataTable(
+                      columns: DBRecord.dataColumns(context),
+                      rows: projectBloc.dataRows(
+                        context,
+                        preferTable: tableNameInfo.name,
+                        sink: inputSelectedStream.sink,
+                        style: null,
+                      ))
+                  : Container(),
+            ),
+          ),
+          opacity: projectInfo.opacity,
+        ),
         Row(
           children: [
             Padding(
@@ -219,9 +252,7 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
               child: WideAnimatedButton(
                 caption: caption,
                 colors: ModeThemeData.primarySwatch,
-                onLongPress: (event, timeStamp) {
-                  make();
-                },
+                onLongPress: (event, timeStamp) {},
                 height: 60.0,
                 width: 200.0,
               ),
@@ -232,20 +263,36 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
     );
   }
 
-  void make() async {
-    if (projectBloc == null) {
-      projectBloc = await DBProjectBloc.make('BigTest');
+  void makeProject(String name) async {
+    if (FieldInput.validateInputField(name: name) != null) return;
+
+    /// Must save any current fields of the project to prevent accidental change of projects without saving.
+    if (projectBloc != null) {
+      await projectBloc.writeTablesToFile(prettyPrint: true);
     }
+
+    projectBloc = await DBProjectBloc.make(name);
     setState(() {
+      projectInfo = FieldMeta(name: name);
+      tableNameInfo = FieldMeta(name: "");
       listOfTables = projectBloc.sortedTableList();
-      caption = 'Ready';
+      setFocusOn(tableNameInfo);
     });
   }
 
   void listener() async {
-    tableNameStream.stream.listen((newName) {
+    projectInfo.stream.listen((newProjectName) {
+      Log.t('main.dart new project name $newProjectName');
+      makeProject(newProjectName);
+    });
+
+    tableNameInfo.stream.listen((newTableName) {
+      Log.t('main.dart new tabe name $newTableName');
       setState(() {
-        tableName = newName;
+        tableNameInfo.dispose();
+        ....
+        tableNameInfo = FieldMeta(name: newTableName);
+        listOfTables = projectBloc.sortedTableList(newTableName);
       });
     });
 
@@ -256,7 +303,7 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
         assert(dbRecord != null);
         fieldInput?.dispose();
         fieldInput = FieldInput.fromDB(record: dbRecord);
-        tableName = dbRecord.name;
+        tableNameInfo.controller.text = dbRecord.name;
         setState(() {
           tabletInputLine = TabletInputLine(fieldInput: fieldInput, sink: inputCompleteStream.sink);
         });
@@ -267,7 +314,7 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
 
     inputCompleteStream.stream.listen((event) {
       try {
-        projectBloc.add(fieldInput: event, toTable: tableName);
+        projectBloc.add(fieldInput: event, toTable: tableNameInfo.name);
         setState(() {
           tabletInputLine = TabletInputLine(fieldInput: FieldInput(), sink: inputCompleteStream.sink);
           listOfTables = projectBloc.sortedTableList();
@@ -282,6 +329,13 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
     setState(() {
       listHeight = ScreenSize.height * 0.70;
       Log.v('main.dart expand $listHeight');
+    });
+  }
+
+  void setFocusOn(FieldMeta fieldMeta) {
+    Future.delayed(Duration(milliseconds: 500), () {
+      FocusScope.of(context).requestFocus(fieldMeta.focusNode);
+      FocusScope.of(context).requestFocus(fieldMeta.focusNode);
     });
   }
 }

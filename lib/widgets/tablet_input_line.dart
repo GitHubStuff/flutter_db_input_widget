@@ -2,8 +2,6 @@ import 'dart:async';
 
 import 'package:after_layout/after_layout.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_db_input_widget/model/db_record.dart';
-import 'package:flutter_db_input_widget/src/broadcast_stream.dart';
 import 'package:flutter_tracers/trace.dart' as Log;
 
 import '../src/field_input.dart';
@@ -14,29 +12,6 @@ import '../src/field_input.dart';
 /// This is the data needed to compose .dart files that handle sqlite code generation.
 
 const _TAB = 9;
-
-/// A broadcast stream to handle when a complete field/column description has been completed
-class InputCompleteStream extends BroadcastStream<FieldInput> {
-  @override
-  void dispose() {
-    close();
-  }
-}
-
-/// A broadcast stream to handle pre-loading the ui input fields with an existing field/column description
-class InputSelectedStream extends BroadcastStream<DBRecord> {
-  @override
-  void dispose() {
-    close();
-  }
-}
-
-class TableNameStream extends BroadcastStream<String> {
-  @override
-  void dispose() {
-    close();
-  }
-}
 
 /// Widget that will display input fields to collect the columnName, json tag, data type, target table(if any), and comment
 /// text the user inputs.
