@@ -75,7 +75,8 @@ class _TabletInputLine extends State<TabletInputLine> with WidgetsBindingObserve
     /// After the initial layout completes, set the visibility of the target-table field
     /// based on the data type that was passed to the widget
     setVisibility(fieldInput);
-    setFocus();
+    Log.f('tablet_input_line removed setFocus()');
+    //setFocus();
   }
 
   @override
@@ -86,7 +87,7 @@ class _TabletInputLine extends State<TabletInputLine> with WidgetsBindingObserve
 
   /// Stumbled on this one.... after the fields have been tabbed out and to clear
   /// and reset, 'didUpdateWidget' is called when a new instance of the this widget
-  /// is created. The render engine doesn't rebuild the widget on create but calls
+  /// is created. The render engine doesn't appear to rebuild the widget on create but calls
   /// this method when an empty FieldInput IS passed when a new widget it created.
   /// *Very Confusing*
   /// So after the input finishes on the main widget tree, a new instance of TabletInputLine
@@ -136,6 +137,7 @@ class _TabletInputLine extends State<TabletInputLine> with WidgetsBindingObserve
 
   /// Weird hack to get the keyboard to focus/appear on the first field of the form.
   void setFocus() {
+    Log.d('tablet_input_line setFocus()');
     Future.delayed(Duration(milliseconds: 200), () {
       FocusScope.of(context).requestFocus(fieldInput.focusNode(forIndex: FieldInput.indexField));
       FocusScope.of(context).requestFocus(fieldInput.focusNode(forIndex: FieldInput.indexField));
@@ -176,7 +178,7 @@ class _TabletInputLine extends State<TabletInputLine> with WidgetsBindingObserve
     final focusNode = fieldInput.focusNode(forIndex: index);
     final textController = fieldInput.textEditingController(forIndex: index);
     textController.text = value;
-    Log.f('Does this work?');
+    Log.f('tablet_input_line -> Does this work?');
     if (!mounted) return null;
     return Flexible(
       child: Padding(
@@ -203,16 +205,26 @@ class _TabletInputLine extends State<TabletInputLine> with WidgetsBindingObserve
     );
   }
 
+  /// When the 'tab' or 'enter' key is pressed, the current field is checked to see if the input is valid before advancing
+  /// to the next field. As several rules apply (eg: only the 'last' field has a Stream.sink to return data, all other fields
+  /// must have at least one character before advancing, if there is a Stream.sink, then all fields must be validated before
+  /// anything is returned via the Stream.sink)...
   void handlerAdvance({@required String text, @required bool isTabbed, @required int index, @required Sink<FieldInput> sink}) {
+    /// If the field is empty but not the 'last' field, then a blank/tabbed field is not permitted and focus stays on
+    /// the current field
     if ((text.isEmpty || text == '\t') && sink == null) {
       Future.delayed(Duration(milliseconds: 200), () {
+        Log.d('tabline_input_line handlerAdvance() set focus');
         fieldInput.textEditingController(forIndex: index).text = '';
         FocusScope.of(context).requestFocus(fieldInput.focusNode(forIndex: index));
       });
       return;
     }
+
+    /// Get the last character to check for 'TAB', or if 'Enter' was pressed (aka !isTabbed)
     final chr = text.runes.toList().last;
     if (chr == _TAB || !isTabbed) {
+      /// Set the text in the backing store (will be used later for whole line validate)
       final putString = fieldInput.setIndex(index, string: text);
       fieldInput.textEditingController(forIndex: index).text = putString;
 
@@ -231,7 +243,7 @@ class _TabletInputLine extends State<TabletInputLine> with WidgetsBindingObserve
 
   /// The dataTypeColumn is just a single letter for types (array, bool, class, datetime, int, real, string) so
   /// a special widget that handles only a single character is needed to ensure the type matches the allowed
-  /// types and to show/hide the 'tableName column' that is associated with 'array' and 'class' types
+  /// types and to show/hide the 'Target' field that is associated with 'array' and 'class' types
   Widget dataTypeColumn({@required int index, @required int flex, @required String value}) {
     final focusNode = fieldInput.focusNode(forIndex: index);
     final controller = fieldInput.textEditingController(forIndex: index);

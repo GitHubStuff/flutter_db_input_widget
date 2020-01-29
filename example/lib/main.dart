@@ -57,16 +57,29 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
   DBProjectBloc projectBloc;
   TabletInputLine tabletInputLine;
 
-  FieldMeta inputLineInfo;
-  FieldMeta listViewInfo;
-  FieldMeta projectInfo = FieldMeta(name: '');
-  FieldMeta tableNameInfo = FieldMeta(name: '');
+//  FieldMeta inputLineInfo;
+//  FieldMeta listViewInfo;
+//  FieldMeta projectInfo;
+//  FieldMeta tableNameInfo;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     Log.t('example initState');
+    projectInfo = FieldMeta(
+      fieldName: '',
+      newNameFunction: (projectName) {
+        projectBloc.writeTablesToFile(prettyPrint: true);
+        if (tableNameInfo == null) {
+          tableNameInfo = FieldMeta(fieldName: '', newNameFunction: (newTableName) {}, debug: 'Table');
+        }
+        setState(() {
+          tableNameInfo.controller.text = '';
+        });
+      },
+      debug: 'Project',
+    );
     tabletInputLine = TabletInputLine(fieldInput: fieldInput, sink: inputCompleteStream.sink);
     keyboardVisibilityNotification.addNewListener(onShow: () {
       setState(() {
@@ -103,12 +116,13 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
     Log.t('example afterFirstLayout');
     expand();
     listener();
-    setFocusOn(projectInfo);
+    Log.f('main.dart removed call to setFocusOn()');
+    //setFocusOn(projectInfo.focusNode);
   }
 
   @override
   Widget build(BuildContext context) {
-    Log.t('example build');
+    Log.t('main.dart build');
     return HudScaffold.progressText(
       context,
       hide: hideSpinner,
@@ -171,6 +185,52 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
+        Row(
+          children: [
+            Padding(
+              child: WideAnimatedButton(
+                playSystemClickSound: true,
+                caption: 'Start',
+                colors: ModeThemeData.productSwatch,
+                height: 60.0,
+                onTap: (tap, timestamp) {
+                  setFocusOn(projectInfo.focusNode);
+                },
+                width: 200,
+              ),
+              padding: const EdgeInsets.all(8.0),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: WideAnimatedButton(
+                caption: 'Save',
+                colors: ModeThemeData.productSwatch,
+                onTap: (tap, timestamp) {
+                  if (projectBloc == null) return;
+                  projectBloc.writeTablesToFile(prettyPrint: true).then((_) {
+                    setState(() {
+                      caption = 'Done!!';
+                      expand();
+                    });
+                  });
+                },
+                height: 60.0,
+                width: 200,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: WideAnimatedButton(
+                caption: caption,
+                colors: ModeThemeData.primarySwatch,
+                onLongPress: (event, timeStamp) {},
+                height: 60.0,
+                width: 200.0,
+              ),
+            ),
+          ],
+        ),
+
         ///Project input field, table name input field
         Row(
           children: <Widget>[
@@ -227,38 +287,6 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
           ),
           opacity: projectInfo.opacity,
         ),
-        Row(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: WideAnimatedButton(
-                caption: 'Write',
-                colors: ModeThemeData.productSwatch,
-                onTap: (tap, timestamp) {
-                  if (projectBloc == null) return;
-                  projectBloc.writeTablesToFile(prettyPrint: true).then((_) {
-                    setState(() {
-                      caption = 'Done!!';
-                      expand();
-                    });
-                  });
-                },
-                height: 60.0,
-                width: 200,
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: WideAnimatedButton(
-                caption: caption,
-                colors: ModeThemeData.primarySwatch,
-                onLongPress: (event, timeStamp) {},
-                height: 60.0,
-                width: 200.0,
-              ),
-            ),
-          ],
-        )
       ],
     );
   }
@@ -273,26 +301,28 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
 
     projectBloc = await DBProjectBloc.make(name);
     setState(() {
-      projectInfo = FieldMeta(name: name);
-      tableNameInfo = FieldMeta(name: "");
+      projectInfo = FieldMeta(fieldName: name, debug: name);
+      tableNameInfo = FieldMeta(fieldName: "", debug: 'Table');
       listOfTables = projectBloc.sortedTableList();
-      setFocusOn(tableNameInfo);
+      setFocusOn(tableNameInfo.focusNode);
     });
   }
 
   void listener() async {
+    /// Listener to capture when a new project name was input.
     projectInfo.stream.listen((newProjectName) {
       Log.t('main.dart new project name $newProjectName');
       makeProject(newProjectName);
     });
 
+    /// Listener to capture when a new table was input
     tableNameInfo.stream.listen((newTableName) {
       Log.t('main.dart new tabe name $newTableName');
       setState(() {
         tableNameInfo.dispose();
-        ....
-        tableNameInfo = FieldMeta(name: newTableName);
+        tableNameInfo = FieldMeta(name: newTableName, debug: newTableName);
         listOfTables = projectBloc.sortedTableList(newTableName);
+        setFocusOn(fieldInput.focusNode(forIndex: FieldInput.indexField));
       });
     });
 
@@ -312,11 +342,15 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
       }
     });
 
+    /// Listener when a data line has been completed and ready to add to the list of fields for a table in a project
+    /// and reset for another field.
     inputCompleteStream.stream.listen((event) {
       try {
         projectBloc.add(fieldInput: event, toTable: tableNameInfo.name);
         setState(() {
-          tabletInputLine = TabletInputLine(fieldInput: FieldInput(), sink: inputCompleteStream.sink);
+          fieldInput?.dispose();
+          fieldInput = FieldInput();
+          tabletInputLine = TabletInputLine(fieldInput: fieldInput, sink: inputCompleteStream.sink);
           listOfTables = projectBloc.sortedTableList();
         });
       } catch (err) {
@@ -332,10 +366,11 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
     });
   }
 
-  void setFocusOn(FieldMeta fieldMeta) {
+  void setFocusOn(FocusNode node) {
     Future.delayed(Duration(milliseconds: 500), () {
-      FocusScope.of(context).requestFocus(fieldMeta.focusNode);
-      FocusScope.of(context).requestFocus(fieldMeta.focusNode);
+      Log.d('main.dart setFocus on $node');
+      FocusScope.of(context).requestFocus(node);
+      FocusScope.of(context).requestFocus(node);
     });
   }
 }

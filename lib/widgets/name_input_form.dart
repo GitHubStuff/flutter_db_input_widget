@@ -4,19 +4,14 @@ import 'package:flutter_db_input_widget/flutter_db_input_widget.dart';
 import 'package:flutter_tracers/trace.dart' as Log;
 
 class NameInputForm extends StatefulWidget {
-  final TextEditingController controller;
-  final FocusNode focusNode;
-  final Sink<String> sink;
-  final String fieldName;
+  final TextEditingController controller = TextEditingController();
+  final FocusNode focusNode = FocusNode();
+  final String formText;
   final String title;
-  const NameInputForm(
-      {Key key,
-      @required this.controller,
-      @required this.focusNode,
-      @required this.sink,
-      @required this.fieldName,
-      @required this.title})
-      : assert(sink != null),
+  final void Function(String newName) result;
+  NameInputForm({Key key, @required this.formText, @required this.title, @required this.result})
+      : assert(title != null),
+        assert(result != null),
         super(key: key);
 
   @override
@@ -34,14 +29,15 @@ class _NameInputForm extends State<NameInputForm> with WidgetsBindingObserver, A
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     Log.t('nameInputForm initState()');
-    controller = widget.controller ?? TextEditingController();
-    controller.text = widget.fieldName;
+    controller = widget.controller;
+    controller.text = widget.formText;
   }
 
   @override
   void afterFirstLayout(BuildContext context) {
     Log.t('nameInputForm afterFirstLayout()');
-    setFocus();
+    Log.f('Removed call to setFocus()');
+    //setFocus();
   }
 
   @override
@@ -86,16 +82,19 @@ class _NameInputForm extends State<NameInputForm> with WidgetsBindingObserver, A
     return Form(
         child: TextFormField(
           autocorrect: false,
+          autofocus: false,
           controller: controller,
           decoration: InputDecoration(labelText: widget.title),
           enableSuggestions: false,
-          focusNode: null,
+          focusNode: widget.focusNode,
+          initialValue: null,
           onChanged: (string) {},
           onFieldSubmitted: (string) {
             if (formKey.currentState.validate()) {
-              widget.sink.add(string.trim());
+              widget.result(string.trim());
             }
           },
+          showCursor: true,
           textInputAction: TextInputAction.done,
           validator: (text) {
             return FieldInput.validateInputField(name: text.trim());
@@ -107,7 +106,7 @@ class _NameInputForm extends State<NameInputForm> with WidgetsBindingObserver, A
   /// Weird hack to get the keyboard to focus/appear on the first field of the form.
   void setFocus() {
     if (widget.focusNode == null) return;
-    Log.t('nameInputForm getting focus');
+    Log.d('nameInputForm setFocus()');
     Future.delayed(Duration(milliseconds: 200), () {
       FocusScope.of(context).requestFocus(widget.focusNode);
       FocusScope.of(context).requestFocus(widget.focusNode);
