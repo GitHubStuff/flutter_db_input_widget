@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:after_layout/after_layout.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_tracers/trace.dart' as Log;
 
 import '../src/field_input.dart';
@@ -12,6 +13,8 @@ import '../src/field_input.dart';
 /// This is the data needed to compose .dart files that handle sqlite code generation.
 
 const _TAB = 9;
+
+final tabletInputLineKey = GlobalKey<_TabletInputLine>();
 
 /// Widget that will display input fields to collect the columnName, json tag, data type, target table(if any), and comment
 /// text the user inputs.
@@ -135,25 +138,6 @@ class _TabletInputLine extends State<TabletInputLine> with WidgetsBindingObserve
     );
   }
 
-  /// Weird hack to get the keyboard to focus/appear on the first field of the form.
-  void setFocus() {
-    Log.d('tablet_input_line setFocus()');
-    Future.delayed(Duration(milliseconds: 200), () {
-      FocusScope.of(context).requestFocus(fieldInput.focusNode(forIndex: FieldInput.indexField));
-      FocusScope.of(context).requestFocus(fieldInput.focusNode(forIndex: FieldInput.indexField));
-    });
-  }
-
-  /// When the data type is changed it will affect the visibility of the 'table' column,
-  /// (there is a table column only for 'array' and 'class' types)
-  void setVisibility(FieldInput fieldInfo) {
-    bool show = FieldInput.isComplex(fieldInfo?.type);
-    if (show == showTableColumn) return;
-    setState(() {
-      showTableColumn = show;
-    });
-  }
-
   /// Creates the widgets that make up the columns, uses a 'template' to reduce redundant code
   void columns(FieldInput source) {
     fieldInput = source;
@@ -163,6 +147,48 @@ class _TabletInputLine extends State<TabletInputLine> with WidgetsBindingObserve
     columnTable = fieldInputWidget(index: FieldInput.indexTarget, flex: 5, value: fieldInput?.target ?? '');
     columnComment =
         fieldInputWidget(index: FieldInput.indexComment, flex: 10, fieldSink: widget.sink, value: fieldInput?.comment ?? '');
+  }
+
+  /// The dataTypeColumn is just a single letter for types (array, bool, class, datetime, int, real, string) so
+  /// a special widget that handles only a single character is needed to ensure the type matches the allowed
+  /// types and to show/hide the 'Target' field that is associated with 'array' and 'class' types
+  Widget dataTypeColumn({@required int index, @required int flex, @required String value}) {
+    final focusNode = fieldInput.focusNode(forIndex: index);
+    final controller = fieldInput.textEditingController(forIndex: index);
+    controller.text = value;
+    return Flexible(
+      child: Padding(
+        child: TextFormField(
+          controller: controller,
+          decoration: InputDecoration(labelText: fieldInput.fieldName(forIndex: index)),
+          focusNode: focusNode,
+          onChanged: (string) {
+            while (string.length > 1) {
+              string = (string.substring(0, string.length - 1)).toLowerCase();
+            }
+            if (!FieldInput.isDataTypes(string)) {
+              Future.delayed(Duration(milliseconds: 200), () {
+                controller.text = '';
+              });
+            } else {
+              controller.text = fieldInput.setIndex(index, string: string);
+              setVisibility(fieldInput);
+              final nextIndex = FieldInput.isComplex(string) ? FieldInput.indexTarget : FieldInput.indexComment;
+              final nextFocus = fieldInput.focusNode(forIndex: nextIndex);
+              Future.delayed(Duration(milliseconds: 200), () {
+                FocusScope.of(context).requestFocus(nextFocus);
+              });
+            }
+          },
+          onFieldSubmitted: (string) {
+            throw Exception('Should not reach here!');
+          },
+          textInputAction: TextInputAction.next,
+        ),
+        padding: EdgeInsets.symmetric(horizontal: 8.0),
+      ),
+      flex: flex,
+    );
   }
 
   /// Template to create an input column
@@ -241,45 +267,22 @@ class _TabletInputLine extends State<TabletInputLine> with WidgetsBindingObserve
     }
   }
 
-  /// The dataTypeColumn is just a single letter for types (array, bool, class, datetime, int, real, string) so
-  /// a special widget that handles only a single character is needed to ensure the type matches the allowed
-  /// types and to show/hide the 'Target' field that is associated with 'array' and 'class' types
-  Widget dataTypeColumn({@required int index, @required int flex, @required String value}) {
-    final focusNode = fieldInput.focusNode(forIndex: index);
-    final controller = fieldInput.textEditingController(forIndex: index);
-    controller.text = value;
-    return Flexible(
-      child: Padding(
-        child: TextFormField(
-          controller: controller,
-          decoration: InputDecoration(labelText: fieldInput.fieldName(forIndex: index)),
-          focusNode: focusNode,
-          onChanged: (string) {
-            while (string.length > 1) {
-              string = (string.substring(0, string.length - 1)).toLowerCase();
-            }
-            if (!FieldInput.isDataTypes(string)) {
-              Future.delayed(Duration(milliseconds: 200), () {
-                controller.text = '';
-              });
-            } else {
-              controller.text = fieldInput.setIndex(index, string: string);
-              setVisibility(fieldInput);
-              final nextIndex = FieldInput.isComplex(string) ? FieldInput.indexTarget : FieldInput.indexComment;
-              final nextFocus = fieldInput.focusNode(forIndex: nextIndex);
-              Future.delayed(Duration(milliseconds: 200), () {
-                FocusScope.of(context).requestFocus(nextFocus);
-              });
-            }
-          },
-          onFieldSubmitted: (string) {
-            throw Exception('Should not reach here!');
-          },
-          textInputAction: TextInputAction.next,
-        ),
-        padding: EdgeInsets.symmetric(horizontal: 8.0),
-      ),
-      flex: flex,
-    );
+  /// Weird hack to get the keyboard to focus/appear on the first field of the form.
+  void setFocus() {
+    Log.d('tablet_input_line setFocus()');
+    Future.delayed(Duration(milliseconds: 200), () {
+      FocusScope.of(context).requestFocus(fieldInput.focusNode(forIndex: FieldInput.indexField));
+      FocusScope.of(context).requestFocus(fieldInput.focusNode(forIndex: FieldInput.indexField));
+    });
+  }
+
+  /// When the data type is changed it will affect the visibility of the 'table' column,
+  /// (there is a table column only for 'array' and 'class' types)
+  void setVisibility(FieldInput fieldInfo) {
+    bool show = FieldInput.isComplex(fieldInfo?.type);
+    if (show == showTableColumn) return;
+    setState(() {
+      showTableColumn = show;
+    });
   }
 }

@@ -112,8 +112,12 @@ class DBProjectBloc with JsonData {
     await _dbProjectIO.writeProject(contents: data);
   }
 
-  List<DataRow> dataRows(BuildContext context,
-      {@required String preferTable, @required Sink<DBRecord> sink, @required TextStyle style}) {
+  List<DataRow> dataRows(
+    BuildContext context, {
+    @required String preferTable,
+    @required Sink<DBRecord> sink,
+    @required TextStyle style,
+  }) {
     List<DataRow> rows = List();
     List<DBRecord> records = sortedTableList(preferTable);
     for (int i = 0; i < records.length; i++) {

@@ -77,14 +77,18 @@ class FieldInput {
     }
   }
 
-  factory FieldInput.fromDB({@required DBRecord record}) {
-    final result = FieldInput();
-    result.setIndex(indexField, string: record.field);
-    result.setIndex(indexJson, string: record.json);
-    result.setIndex(indexDataType, string: record.type);
-    result.setIndex(indexTarget, string: record.target);
-    result.setIndex(indexComment, string: record.comment);
-    return result;
+  void copyFromDB({@required BuildContext context, @required DBRecord record}) {
+    setIndex(indexField, string: record.field);
+    _textEditControllers[indexField].text = record.field;
+    setIndex(indexJson, string: record.json);
+    _textEditControllers[indexJson].text = record.json;
+    setIndex(indexDataType, string: record.type);
+    _textEditControllers[indexDataType].text = record.type;
+    setIndex(indexTarget, string: record.target);
+    _textEditControllers[indexTarget].text = record.target;
+    setIndex(indexComment, string: record.comment);
+    _textEditControllers[indexComment].text = record.comment;
+    focusOnFirstField(context);
   }
 
   void dispose() {
@@ -97,6 +101,12 @@ class FieldInput {
     }
   }
 
+  void focusOnFirstField(BuildContext context) {
+    assert(context != null, 'field_input.dart passed null context');
+    FocusNode node = focusNode(forIndex: indexField);
+    FocusScope.of(context).requestFocus(node);
+  }
+
   /// To allow for re-ordering of fields, what is consider 'the next' field can vary so any requests for 'NextFocusNode'
   /// has to be calculated based on the current rules.... RIGHT NOW: the rule is to simple return the next FocusNode in the
   /// list of focus nodes.
@@ -105,6 +115,16 @@ class FieldInput {
     assert(forIndex < _focusNodes.length, 'field_input.dart nextField index ${forIndex.toString()} > ${_focusNodes.length}');
     if (forIndex != indexDataType) return _focusNodes[forIndex + 1];
     return isComplex(type) ? _focusNodes[indexTarget] : _focusNodes[indexComment];
+  }
+
+  void reset({@required BuildContext context}) {
+    assert(context != null, 'field_input.dart null context');
+    _items = List.filled(_fieldsNames.length, '');
+    for (TextEditingController controller in _textEditControllers) {
+      controller.text = '';
+    }
+    Log.d('field_input focusOnFirstField(${context.toString()})');
+    focusOnFirstField(context);
   }
 
   /// Validators for the the fields of an input line

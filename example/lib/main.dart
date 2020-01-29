@@ -55,32 +55,19 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
   double listHeight = 300.0;
   List<DBRecord> listOfTables = List();
   DBProjectBloc projectBloc;
+  FocusNode projectFocusNode = FocusNode(debugLabel: 'project');
+  bool projectStart = false;
+  FocusNode tableNameFocusNode = FocusNode(debugLabel: 'table');
+  TextEditingController tableTextEditingController = TextEditingController();
+  String tableName;
   TabletInputLine tabletInputLine;
-
-//  FieldMeta inputLineInfo;
-//  FieldMeta listViewInfo;
-//  FieldMeta projectInfo;
-//  FieldMeta tableNameInfo;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     Log.t('example initState');
-    projectInfo = FieldMeta(
-      fieldName: '',
-      newNameFunction: (projectName) {
-        projectBloc.writeTablesToFile(prettyPrint: true);
-        if (tableNameInfo == null) {
-          tableNameInfo = FieldMeta(fieldName: '', newNameFunction: (newTableName) {}, debug: 'Table');
-        }
-        setState(() {
-          tableNameInfo.controller.text = '';
-        });
-      },
-      debug: 'Project',
-    );
-    tabletInputLine = TabletInputLine(fieldInput: fieldInput, sink: inputCompleteStream.sink);
+    tabletInputLine = TabletInputLine(key: tabletInputLineKey, fieldInput: fieldInput, sink: inputCompleteStream.sink);
     keyboardVisibilityNotification.addNewListener(onShow: () {
       setState(() {
         listHeight = ScreenSize.height * 0.20;
@@ -169,12 +156,7 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
     WidgetsBinding.instance.removeObserver(this);
     inputCompleteStream.dispose();
     keyboardVisibilityNotification.dispose();
-
-    inputLineInfo?.dispose();
-    listViewInfo?.dispose();
-    projectInfo.dispose();
-    tableNameInfo?.dispose();
-
+    fieldInput.dispose();
     super.dispose();
   }
 
@@ -194,7 +176,10 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
                 colors: ModeThemeData.productSwatch,
                 height: 60.0,
                 onTap: (tap, timestamp) {
-                  setFocusOn(projectInfo.focusNode);
+                  setState(() {
+                    projectStart = true;
+                    setFocusOn(projectFocusNode);
+                  });
                 },
                 width: 200,
               ),
@@ -235,12 +220,25 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
         Row(
           children: <Widget>[
             Container(
-              child: NameInputForm(
-                  focusNode: projectInfo.focusNode,
-                  controller: null,
-                  sink: projectInfo.sink,
-                  fieldName: projectInfo.name,
-                  title: 'Project Name'),
+              child: Opacity(
+                child: NameInputForm(
+                  focusNode: projectFocusNode,
+                  formText: projectBloc?.name ?? '',
+                  title: 'Project',
+                  result: (newName) {
+                    setState(() {
+                      projectBloc?.writeTablesToFile(prettyPrint: true);
+                      DBProjectBloc.make(newName).then((newBloc) {
+                        projectBloc = newBloc;
+                        listOfTables = projectBloc.sortedTableList();
+                        tableName = '';
+                        setFocusOn(tableNameFocusNode);
+                      });
+                    });
+                  },
+                ),
+                opacity: (projectStart) ? 1.0 : 0.2,
+              ),
               width: ScreenSize.width * 0.20,
             ),
             Container(
@@ -249,13 +247,18 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
             Opacity(
               child: Container(
                   child: NameInputForm(
-                      focusNode: tableNameInfo.focusNode,
-                      controller: tableNameInfo.controller,
-                      sink: tableNameInfo.sink,
-                      fieldName: tableNameInfo.name,
-                      title: 'Table Name'),
+                      controller: tableTextEditingController,
+                      focusNode: tableNameFocusNode,
+                      formText: tableName ?? '',
+                      title: 'Table',
+                      result: (newTableName) {
+                        setState(() {
+                          tableName = newTableName;
+                          fieldInput.focusOnFirstField(context);
+                        });
+                      }),
                   width: ScreenSize.width * 0.20),
-              opacity: projectInfo.opacity,
+              opacity: (projectBloc == null || projectBloc.name.isEmpty) ? 0.2 : 1.0,
             ),
           ],
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -265,7 +268,7 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
         /// Data input line
         Opacity(
           child: tabletInputLine,
-          opacity: (projectBloc?.tableCount ?? 0) > 0 ? 1.0 : 0.2,
+          opacity: (tableName != null && tableName.isNotEmpty) ? 1.0 : 0.2,
         ),
 
         /// Table of data
@@ -273,69 +276,35 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
           child: Container(
             height: listHeight,
             child: SingleChildScrollView(
-              child: (projectInfo.enabled && projectBloc != null)
+              child: (projectBloc != null)
                   ? DataTable(
                       columns: DBRecord.dataColumns(context),
                       rows: projectBloc.dataRows(
                         context,
-                        preferTable: tableNameInfo.name,
+                        preferTable: tableName,
                         sink: inputSelectedStream.sink,
                         style: null,
                       ))
                   : Container(),
             ),
           ),
-          opacity: projectInfo.opacity,
+          opacity: (projectBloc == null) ? 0.2 : 1.0,
         ),
       ],
     );
   }
 
-  void makeProject(String name) async {
-    if (FieldInput.validateInputField(name: name) != null) return;
-
-    /// Must save any current fields of the project to prevent accidental change of projects without saving.
-    if (projectBloc != null) {
-      await projectBloc.writeTablesToFile(prettyPrint: true);
-    }
-
-    projectBloc = await DBProjectBloc.make(name);
-    setState(() {
-      projectInfo = FieldMeta(fieldName: name, debug: name);
-      tableNameInfo = FieldMeta(fieldName: "", debug: 'Table');
-      listOfTables = projectBloc.sortedTableList();
-      setFocusOn(tableNameInfo.focusNode);
-    });
-  }
-
   void listener() async {
-    /// Listener to capture when a new project name was input.
-    projectInfo.stream.listen((newProjectName) {
-      Log.t('main.dart new project name $newProjectName');
-      makeProject(newProjectName);
-    });
-
-    /// Listener to capture when a new table was input
-    tableNameInfo.stream.listen((newTableName) {
-      Log.t('main.dart new tabe name $newTableName');
-      setState(() {
-        tableNameInfo.dispose();
-        tableNameInfo = FieldMeta(name: newTableName, debug: newTableName);
-        listOfTables = projectBloc.sortedTableList(newTableName);
-        setFocusOn(fieldInput.focusNode(forIndex: FieldInput.indexField));
-      });
-    });
-
     /// DBRecord returned by UI when a record is selected
     /// Redraws the input line with that data
     inputSelectedStream.stream.listen((dbRecord) {
       try {
         assert(dbRecord != null);
-        fieldInput?.dispose();
-        fieldInput = FieldInput.fromDB(record: dbRecord);
-        tableNameInfo.controller.text = dbRecord.name;
         setState(() {
-          tabletInputLine = TabletInputLine(fieldInput: fieldInput, sink: inputCompleteStream.sink);
+          fieldInput.copyFromDB(context: context, record: dbRecord);
+          tableName = dbRecord.name;
+          tabletInputLineKey.currentState.setVisibility(fieldInput);
+          tableTextEditingController.text = tableName;
         });
       } catch (err) {
         Log.e(err.toString());
@@ -346,12 +315,11 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
     /// and reset for another field.
     inputCompleteStream.stream.listen((event) {
       try {
-        projectBloc.add(fieldInput: event, toTable: tableNameInfo.name);
+        projectBloc.add(fieldInput: event, toTable: tableName);
         setState(() {
-          fieldInput?.dispose();
-          fieldInput = FieldInput();
-          tabletInputLine = TabletInputLine(fieldInput: fieldInput, sink: inputCompleteStream.sink);
-          listOfTables = projectBloc.sortedTableList();
+          projectBloc.writeTablesToFile(prettyPrint: true);
+          listOfTables = projectBloc.sortedTableList(tableName);
+          fieldInput.reset(context: context);
         });
       } catch (err) {
         Log.e(err.toString());

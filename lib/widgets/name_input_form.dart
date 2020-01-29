@@ -4,13 +4,15 @@ import 'package:flutter_db_input_widget/flutter_db_input_widget.dart';
 import 'package:flutter_tracers/trace.dart' as Log;
 
 class NameInputForm extends StatefulWidget {
-  final TextEditingController controller = TextEditingController();
-  final FocusNode focusNode = FocusNode();
+  final TextEditingController controller;
+  final FocusNode focusNode;
   final String formText;
   final String title;
   final void Function(String newName) result;
-  NameInputForm({Key key, @required this.formText, @required this.title, @required this.result})
-      : assert(title != null),
+  const NameInputForm(
+      {Key key, @required this.focusNode, @required this.formText, @required this.title, @required this.result, this.controller})
+      : assert(focusNode != null),
+        assert(title != null),
         assert(result != null),
         super(key: key);
 
@@ -29,7 +31,7 @@ class _NameInputForm extends State<NameInputForm> with WidgetsBindingObserver, A
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     Log.t('nameInputForm initState()');
-    controller = widget.controller;
+    controller = widget.controller ?? TextEditingController();
     controller.text = widget.formText;
   }
 
