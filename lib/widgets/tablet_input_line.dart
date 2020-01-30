@@ -78,8 +78,6 @@ class _TabletInputLine extends State<TabletInputLine> with WidgetsBindingObserve
     /// After the initial layout completes, set the visibility of the target-table field
     /// based on the data type that was passed to the widget
     setVisibility(fieldInput);
-    Log.f('tablet_input_line removed setFocus()');
-    //setFocus();
   }
 
   @override
@@ -204,7 +202,6 @@ class _TabletInputLine extends State<TabletInputLine> with WidgetsBindingObserve
     final focusNode = fieldInput.focusNode(forIndex: index);
     final textController = fieldInput.textEditingController(forIndex: index);
     textController.text = value;
-    Log.f('tablet_input_line -> Does this work?');
     if (!mounted) return null;
     return Flexible(
       child: Padding(

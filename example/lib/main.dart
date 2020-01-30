@@ -66,15 +66,15 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    Log.t('example initState');
+    Log.t('main.dart initState');
     tabletInputLine = TabletInputLine(key: tabletInputLineKey, fieldInput: fieldInput, sink: inputCompleteStream.sink);
     keyboardVisibilityNotification.addNewListener(onShow: () {
       setState(() {
-        listHeight = ScreenSize.height * 0.20;
+        listHeight = ScreenSize.height * 0.60;
         Log.f('main.dart show listHeight $listHeight');
       });
     }, onHide: () {
-      Log.v('example onHide');
+      Log.f('example onHide');
       expand();
     });
   }
@@ -82,29 +82,26 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
   @override
   didChangeDependencies() {
     super.didChangeDependencies();
-    Log.t('example didChangeDependencies');
-    Log.v('example didChangeDependencies => $listHeight');
+    Log.t('main.dart didChangeDependencies');
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    Log.t('example didChangeAppLifecycleState ${state.toString()}');
+    Log.t('main.dart didChangeAppLifecycleState ${state.toString()}');
   }
 
   @override
   void didChangePlatformBrightness() {
     final Brightness brightness = WidgetsBinding.instance.window.platformBrightness;
     ModeTheme.of(context).setBrightness(brightness);
-    Log.t('example didChangePlatformBrightness ${brightness.toString()}');
+    Log.t('main.dart didChangePlatformBrightness ${brightness.toString()}');
   }
 
   @override
   void afterFirstLayout(BuildContext context) {
-    Log.t('example afterFirstLayout');
+    Log.t('main.dart afterFirstLayout');
     expand();
     listener();
-    Log.f('main.dart removed call to setFocusOn()');
-    //setFocusOn(projectInfo.focusNode);
   }
 
   @override
@@ -140,19 +137,19 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
 
   @override
   void didUpdateWidget(Widget oldWidget) {
-    Log.t('example didUpdateWidget');
+    Log.t('main.dart didUpdateWidget');
     super.didUpdateWidget(oldWidget);
   }
 
   @override
   void deactivate() {
-    Log.t('example deactivate');
+    Log.t('main.dart deactivate');
     super.deactivate();
   }
 
   @override
   void dispose() {
-    Log.t('example dispose');
+    Log.t('main.dart dispose');
     WidgetsBinding.instance.removeObserver(this);
     inputCompleteStream.dispose();
     keyboardVisibilityNotification.dispose();
@@ -162,7 +159,7 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
 
   /// Scaffold body
   Widget body() {
-    Log.v('main body() didChangeDependencies => $listHeight');
+    Log.t('main.dart body() didChangeDependencies => $listHeight');
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -224,12 +221,17 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
                 child: NameInputForm(
                   focusNode: projectFocusNode,
                   formText: projectBloc?.name ?? '',
+                  invalidInput: (_) {
+                    setState(() {
+                      tableName = null;
+                    });
+                  },
                   title: 'Project',
                   result: (newName) {
-                    setState(() {
-                      projectBloc?.writeTablesToFile(prettyPrint: true);
-                      DBProjectBloc.make(newName).then((newBloc) {
-                        projectBloc = newBloc;
+                    projectBloc?.writeTablesToFile(prettyPrint: true);
+                    DBProjectBloc.make(newName).then((newBloc) {
+                      projectBloc = newBloc;
+                      setState(() {
                         listOfTables = projectBloc.sortedTableList();
                         tableName = '';
                         setFocusOn(tableNameFocusNode);
@@ -250,6 +252,11 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
                       controller: tableTextEditingController,
                       focusNode: tableNameFocusNode,
                       formText: tableName ?? '',
+                      invalidInput: (badName) {
+                        setState(() {
+                          tableName = badName;
+                        });
+                      },
                       title: 'Table',
                       result: (newTableName) {
                         setState(() {
@@ -258,7 +265,7 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
                         });
                       }),
                   width: ScreenSize.width * 0.20),
-              opacity: (projectBloc == null || projectBloc.name.isEmpty) ? 0.2 : 1.0,
+              opacity: (tableName == null) ? 0.2 : 1.0,
             ),
           ],
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -268,7 +275,7 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
         /// Data input line
         Opacity(
           child: tabletInputLine,
-          opacity: (tableName != null && tableName.isNotEmpty) ? 1.0 : 0.2,
+          opacity: (FieldInput.validateInputField(name: tableName) == null) ? 1.0 : 0.2,
         ),
 
         /// Table of data
@@ -329,14 +336,14 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
 
   void expand() {
     setState(() {
-      listHeight = ScreenSize.height * 0.70;
-      Log.v('main.dart expand $listHeight');
+      listHeight = ScreenSize.height * 0.60;
+      Log.f('main.dart expand $listHeight');
     });
   }
 
   void setFocusOn(FocusNode node) {
     Future.delayed(Duration(milliseconds: 500), () {
-      Log.d('main.dart setFocus on $node');
+      Log.t('main.dart setFocus on $node');
       FocusScope.of(context).requestFocus(node);
       FocusScope.of(context).requestFocus(node);
     });
