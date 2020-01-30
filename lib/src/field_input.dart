@@ -171,7 +171,7 @@ class FieldInput {
   String setIndex(int index, {@required String string}) {
     assert(index != null && index >= 0 && index < _items.length, '$index is invalid for size ${_items.length}');
     assert(string != null);
-    while (string.isNotEmpty && string.runes.toList().last == 9) {
+    while (string.isNotEmpty && string.endsWith('\t')) {
       string = string.substring(0, string.length - 1);
     }
     _items[index] = string;

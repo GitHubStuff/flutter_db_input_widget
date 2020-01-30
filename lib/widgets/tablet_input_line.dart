@@ -12,8 +12,6 @@ import '../src/field_input.dart';
 ///
 /// This is the data needed to compose .dart files that handle sqlite code generation.
 
-const _TAB = 9;
-
 final tabletInputLineKey = GlobalKey<_TabletInputLine>();
 
 /// Widget that will display input fields to collect the columnName, json tag, data type, target table(if any), and comment
@@ -245,8 +243,7 @@ class _TabletInputLine extends State<TabletInputLine> with WidgetsBindingObserve
     }
 
     /// Get the last character to check for 'TAB', or if 'Enter' was pressed (aka !isTabbed)
-    final chr = text.runes.toList().last;
-    if (chr == _TAB || !isTabbed) {
+    if (text.endsWith('\t') || !isTabbed) {
       /// Set the text in the backing store (will be used later for whole line validate)
       final putString = fieldInput.setIndex(index, string: text);
       fieldInput.textEditingController(forIndex: index).text = putString;
