@@ -1,54 +1,60 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_db_input_widget/flutter_db_input_widget.dart';
 import 'package:flutter_db_input_widget/io/db_project_io.dart';
-import 'package:flutter_db_input_widget/model/db_record.dart';
 import 'package:flutter_strings/flutter_strings.dart' as Strings;
+import 'package:flutter_tracers/trace.dart' as Log;
 
-import 'fixed_headers.dart' as Helpers;
-
-const String suffix = '.txt';
+const String suffix = '.g.txt';
 
 typedef Callback = bool Function(String message);
 
 class Generator {
   final DBProjectBloc projectBloc;
   final Callback callback;
-  const Generator({@required this.projectBloc, @required this.callback})
+  Generator({@required this.projectBloc, @required this.callback})
       : assert(projectBloc != null),
         assert(callback != null);
 
-  Future<String> go() async {
-    return generateDatabase(usingName: projectBloc.name);
+  Future<dynamic> go() async {
+    try {
+      var library = await generateLibrary(projectBloc: projectBloc);
+      final s = library.content;
+      await library.write(s);
+      return s;
+    } catch (error) {
+      Log.e('go (error): ${error.toString()}');
+      return error;
+    }
   }
 
   /// Creates a file named {project}.g.dart that will be the database file for the project
-  Future<String> generateDatabase({String usingName}) async {
-    usingName = Strings.lowercase(usingName ?? projectBloc.name) + '.g';
-    final io = DBProjectIO(usingName, fileSuffix: suffix);
-    final tableNamesString = generateTableNames();
-    final content = Helpers.database(name: usingName, tableNamesAsString: tableNamesString);
+  Future<dynamic> generateLibrary({@required DBProjectBloc projectBloc}) async {
+    assert(projectBloc != null);
     try {
-      await io.writeProject(contents: content);
-      if (!callback('Datebase $usingName.dart created')) return '..Stopped..';
+      final libraryName = 'sqlite_${projectBloc.name.toLowerCase()}_library';
+      final generatorIO = GeneratorIO(rootFileName: libraryName, suffix: suffix);
+      final content = 'library $libraryName;';
+      final tableNameList = projectBloc.tableNameList();
+      generatorIO.add([content, '']);
+      final tableNameConst = _generateTableNameConstString(tableNameList);
+      generatorIO.add(tableNameConst);
+      for (String tableName in tableNameList) {
+        final path = await generatorIO.createTableFilePath(libraryPath: '$tableName', tableFileName: '$tableName$suffix');
+        Log.t('Table file path: ${path.toString()}');
+        if (!(path is String)) {
+          Log.e('generateLibrary (path): ${path.toString()}');
+          return path;
+        }
+        final line = "export 'package:$libraryName/$tableName/$tableName$suffix';";
+        generatorIO.add([line]);
+      }
+      return generatorIO;
     } catch (error) {
-      return error.toString();
+      Log.e('generateLibrary (error): ${error.toString()}');
+      return error;
     }
-    return null;
   }
 
-  String generateTableNames({List<DBRecord> sortedRows, int indented = 3}) {
-    sortedRows ??= projectBloc.sortedTableList();
-    if (indented == null || indented < 0) return 'Improper indentation value: $indented';
-    final space = Strings.pad(indented);
-    String currentTableName;
-    String result = '';
-    String newLine = '';
-    for (DBRecord record in sortedRows) {
-      if (currentTableName == record.name) continue;
-      currentTableName = Strings.capitalize(record.name);
-      result += newLine + space + 'const String table$currentTableName;';
-      newLine = '\n';
-    }
-    return result;
-  }
+  List<String> _generateTableNameConstString(List<String> tableNames) =>
+      tableNames.map((name) => 'const String table${Strings.capitalize(name)};').toList(growable: true)..add('');
 }

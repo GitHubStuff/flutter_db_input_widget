@@ -35,7 +35,7 @@ class DBRecord with JsonData {
   final String type;
   final String target;
   final String comment;
-  DBRecord(this.name, this.field, this.json, this.type, this.target, this.comment)
+  DBRecord._private(this.name, this.field, this.json, this.type, this.target, this.comment)
       : assert(name != null),
         assert(field != null),
         assert(json != null),
@@ -46,7 +46,7 @@ class DBRecord with JsonData {
   factory DBRecord.from({@required String tableName, @required FieldInput fieldInput}) {
     assert(fieldInput != null);
     final input = fieldInput;
-    return DBRecord(tableName, input.field, input.json, input.type, input.target ?? '', input.comment);
+    return DBRecord._private(tableName, input.field, input.json, input.type, input.target ?? '', input.comment);
   }
 
   DBRecord.fromJson(Map map)
@@ -68,7 +68,7 @@ class DBRecord with JsonData {
 
   static DBRecord mock([String table = 'MockTable']) {
     final field = 'J' + DateTime.now().toLocal().toIso8601String().substring(20);
-    var result = DBRecord('$table', '$field', 'mockJson', 'c', 'mockTarget', 'mockComment');
+    var result = DBRecord._private('$table', '$field', 'mockJson', 'c', 'mockTarget', 'mockComment');
     return result;
   }
 

@@ -37,8 +37,19 @@ class DBProjectBloc with JsonData {
       final bKey = (b.name.toLowerCase() == fav) ? '0' + b.name : '1' + b.name;
       return (aKey + a.field).toLowerCase().compareTo((bKey + b.field).toLowerCase());
     });
-
     return temp;
+  }
+
+  /// Get just the list of table names. These are needed for code generation.
+  List<String> tableNameList() {
+    List<String> result = List();
+    final temp = sortedTableList();
+    String currentName;
+    for (DBRecord record in temp) {
+      if (record.name.toLowerCase() != currentName) result.add(record.name);
+      currentName = record.name.toLowerCase();
+    }
+    return result;
   }
 
   /// File manager to read/write files to the local store.
@@ -93,6 +104,22 @@ class DBProjectBloc with JsonData {
     }
   }
 
+  /// Create a list of flutter DataRow widgets to display the list of tables/fields have been entered.
+  List<DataRow> dataRows(
+    BuildContext context, {
+    @required String preferTable,
+    @required Sink<DBRecord> sink,
+    @required TextStyle style,
+  }) {
+    List<DataRow> rows = List();
+    List<DBRecord> records = sortedTableList(preferTable);
+    for (int i = 0; i < records.length; i++) {
+      final row = records[i].dataCells(context, index: i, sink: sink, style: style);
+      rows.add(DataRow(cells: row));
+    }
+    return rows;
+  }
+
   /// Uniqueness is a database is a unique column name within a table,
   /// This looks for instances of a field name within the list of table information with
   /// matches on both the table name and in the column name. This controls if an item
@@ -110,20 +137,5 @@ class DBProjectBloc with JsonData {
     _tables.sort((a, b) => (a.name + a.field).toLowerCase().compareTo((b.name + b.field).toLowerCase()));
     String data = dataString(prettyPrint: prettyPrint ?? false);
     await _dbProjectIO.writeProject(contents: data);
-  }
-
-  List<DataRow> dataRows(
-    BuildContext context, {
-    @required String preferTable,
-    @required Sink<DBRecord> sink,
-    @required TextStyle style,
-  }) {
-    List<DataRow> rows = List();
-    List<DBRecord> records = sortedTableList(preferTable);
-    for (int i = 0; i < records.length; i++) {
-      final row = records[i].dataCells(context, index: i, sink: sink, style: style);
-      rows.add(DataRow(cells: row));
-    }
-    return rows;
   }
 }

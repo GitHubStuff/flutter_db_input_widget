@@ -6,6 +6,7 @@ const BadString = 101;
 const BadType = 102;
 const BadWrite = 103;
 
+/// For creating custom exceptions
 class HelperException implements Exception {
   final message;
   final prefix;
@@ -29,6 +30,13 @@ String makeGetter(String item, {bool includeSetter = false, @required int leadin
   return result;
 }
 
+/// Takes a item from a map/dictionary and determines its bool value(or null)
+/// to handled json like =>
+///    { "isDone" : true },   {"isOver": false}
+///    { "isDone" : "true" }  {"isOver": "false"}
+///    { "isDone" : 1 }       {"isOver": 0 }
+///
+/// any value that is not an acceptable form of T/F will throw an exception.
 bool ofJson(dynamic value) {
   if (value is bool || value == null) return value;
   if (value is int) {
@@ -43,6 +51,7 @@ bool ofJson(dynamic value) {
   throw InvalidTypeExpression('$value is not mappable must be bool, int, string', BadType);
 }
 
+/// Exceptions thrown by the helpers with information about the issue for calling methods to process
 class FailedToWrite extends HelperException {
   FailedToWrite([message, int code]) : super(message, 'Failed to write data', code);
 }
