@@ -36,16 +36,18 @@ class Generator {
       final content = 'library $libraryName;';
       final tableNameList = projectBloc.tableNameList();
       generatorIO.add([content, '']);
-      final tableNameConst = _generateTableNameConstString(tableNameList);
-      generatorIO.add(tableNameConst);
+      final tableNameConstList = _generateTableNameConstString(tableNameList);
+      generatorIO.add(tableNameConstList);
       for (String tableName in tableNameList) {
-        final path = await generatorIO.createTableFilePath(libraryPath: '$tableName', tableFileName: '$tableName$suffix');
+        final asFlutterFilename = Strings.flutterFilenameStyle(using: tableName);
+        final path =
+            await generatorIO.createTableFilePath(libraryPath: '$asFlutterFilename', tableFileName: '$asFlutterFilename$suffix');
         Log.t('Table file path: ${path.toString()}');
         if (!(path is String)) {
           Log.e('generateLibrary (path): ${path.toString()}');
           return path;
         }
-        final line = "export 'package:$libraryName/$tableName/$tableName$suffix';";
+        final line = "export 'package:$libraryName/$asFlutterFilename/$asFlutterFilename$suffix';";
         generatorIO.add([line]);
       }
       return generatorIO;

@@ -17,17 +17,18 @@ class HelperException implements Exception {
   }
 }
 
-String makeGetter(String item, {bool includeSetter = false, @required int leadingSpaces, String type = 'bool', String value}) {
+List<String> makeGetter(String item, {bool includeSetter = true, @required int leadingSpaces, String type = 'bool', String value}) {
   assert(item != null);
   assert(includeSetter != null);
   assert(leadingSpaces >= 0);
   assert(type != null);
   value ??= '_' + item;
-  final String space = Strings.pad(leadingSpaces);
-  String result = space + '$type get $item => $value;';
-  item = 'set' + Strings.capitalize(item);
-  if (includeSetter) result = result + '\n' + space + 'void item($type newValue) => value = newValue';
-  return result;
+  List<String> results = List();
+  String result = '$type get $item => $value;';
+  results.add(result.padLeft(result.length + leadingSpaces, ' '));
+  result = 'void set${Strings.capitalize(item)}($type newValue) => value = newValue;';
+  if (includeSetter) results.add(result.padLeft(result.length + leadingSpaces, ' '));
+  return results;
 }
 
 /// Takes a item from a map/dictionary and determines its bool value(or null)
