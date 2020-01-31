@@ -1,5 +1,6 @@
 import 'dart:io' as io;
 
+import 'package:flutter_db_input_widget/generation/generation_helpers.dart';
 import 'package:flutter_tracers/trace.dart' as Log;
 import 'package:path_provider/path_provider.dart';
 
@@ -40,6 +41,9 @@ class DBProjectIO {
       String content = await file.readAsString();
       return content;
     } catch (e) {
+      /// If the file was not found, return an empty string and file creation will occur on write,
+      /// as it assumed no file is a new project, no testing for other i/o issues (permission,locking, etc)
+      /// is not done.
       return '';
     }
   }
@@ -51,6 +55,7 @@ class DBProjectIO {
       file.writeAsString(contents, flush: true);
     } catch (error) {
       Log.e('writeProject: ${error.toString()}');
+      throw FailedToWrite('writeProject: ${error.toString()}', BadWrite);
     }
   }
 }

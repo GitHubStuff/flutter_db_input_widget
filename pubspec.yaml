@@ -1,7 +1,7 @@
 name: flutter_db_input_widget
 description: A Widget for flutter_db_builder
-version: 0.0.2
-homepage: https://www.silversphere.com
+version: 0.0.2+1
+homepage: https://github.com/GitHubStuff/flutter_db_input_widget
 
 environment:
   sdk: '>=2.2.0 <3.0.0'
@@ -21,9 +21,9 @@ dependencies:
   flutter_tracers:
     git:
       url: https://github.com/GitHubStuff/flutter_tracers.git
-  notifier: ^1.0.2
-  path_provider: ^1.6.0
+  path: ^1.6.4
   shared_preferences: ^0.5.6+1
+  sqflite: ^1.2.0
 
 dev_dependencies:
   flutter_test:

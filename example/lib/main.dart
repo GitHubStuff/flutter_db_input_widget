@@ -5,13 +5,8 @@ import 'package:flutter_db_input_widget/model/db_record.dart';
 import 'package:flutter_theme_package/flutter_theme_package.dart';
 import 'package:flutter_tracers/trace.dart' as Log;
 import 'package:keyboard_visibility/keyboard_visibility.dart';
-import 'package:notifier/notifier_provider.dart';
 
-void main() {
-  runApp(NotifierProvider(
-    child: MyApp(),
-  ));
-}
+void main() => runApp(MyApp());
 
 class MyApp extends StatelessWidget {
   @override
@@ -46,7 +41,7 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
   // ignore: non_constant_identifier_names
   Size get ScreenSize => MediaQuery.of(context).size;
 
-  String caption = 'Start';
+  String caption = 'Generate';
   FieldInput fieldInput = FieldInput();
   bool hideSpinner = true;
   InputCompleteStream inputCompleteStream = InputCompleteStream();
@@ -164,6 +159,7 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
+        /// Buttons at the top
         Row(
           children: [
             Padding(
@@ -205,9 +201,19 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
               child: WideAnimatedButton(
                 caption: caption,
                 colors: ModeThemeData.primarySwatch,
-                onLongPress: (event, timeStamp) {},
+                onLongPress: (event, timeStamp) {
+                  Generator(
+                          callback: (message) {
+                            setState(() {
+                              caption = message;
+                            });
+                            return true;
+                          },
+                          projectBloc: projectBloc)
+                      .go();
+                },
                 height: 60.0,
-                width: 200.0,
+                width: 400.0,
               ),
             ),
           ],

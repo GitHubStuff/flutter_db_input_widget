@@ -1,5 +1,6 @@
 library flutter_db_input_widget;
 
+export 'package:flutter_db_input_widget/generation/generator.dart';
 export 'package:flutter_db_input_widget/model/field_meta.dart';
 export 'package:flutter_db_input_widget/model/streams.dart';
 export 'package:flutter_db_input_widget/src/db_project_bloc.dart';
