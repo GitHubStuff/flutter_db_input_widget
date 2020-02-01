@@ -18,7 +18,7 @@ class GeneratorIO extends DBProjectIO {
   int add(List<String> lines, {int padding = 0}) {
     assert(lines != null);
     assert(padding >= 0);
-    var result = lines.map((e) => '${e.padLeft(e.length + padding, " ")}\n').toList();
+    var result = lines.map((e) => '${Strings.intent(e, padding)}\n').toList();
     _lines.addAll(result);
     return _lines.length;
   }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_db_input_widget/generation/fixed_headers.dart' as Headers;
 import 'package:flutter_db_input_widget/src/broadcast_stream.dart';
 import 'package:flutter_db_input_widget/src/field_input.dart';
+import 'package:flutter_strings/flutter_strings.dart' as Strings;
 import 'package:flutter_theme_package/flutter_theme_package.dart' as UI;
 
 /// This class represents the information that is used to generate dart code for tables and fields
@@ -84,6 +86,9 @@ class DBRecord with JsonData {
     columns.add(DataColumn(label: Text('Comment', style: textStyle)));
     return columns;
   }
+
+  String get asTrailingComment => Strings.intent(formattedComment, Headers.trailingComment);
+  String get formattedComment => (comment.trim().isEmpty) ? '' : '/// ${comment.trim()}';
 
   List<DataCell> dataCells(
     BuildContext context, {

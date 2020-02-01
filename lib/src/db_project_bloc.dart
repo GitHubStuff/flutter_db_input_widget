@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_db_input_widget/generation/fixed_headers.dart' as Headers;
 import 'package:flutter_db_input_widget/io/db_project_io.dart' as File;
 import 'package:flutter_db_input_widget/model/db_record.dart';
 import 'package:flutter_db_input_widget/src/broadcast_stream.dart';
@@ -15,13 +16,21 @@ import '../flutter_db_input_widget.dart';
 /// dart code.
 ///
 class DBProjectBloc with JsonData {
-  static const libraryPrefix = 'sqlite_';
-  static const librarySuffix = '_library';
-  static const tablePrefix = 'table_';
-
   /// Used as keys in for json text to avoid typo's when using literal strings
   static const _Name = 'name';
   static const _Tables = 'tables';
+
+  /// Most of the creation process is async so this async helper method should be used to
+  /// create the instance of the class. It also insures that if the project info exists on
+  /// the device the data is loaded, or created if a new project.
+  static Future<DBProjectBloc> make(String projectName) async {
+    assert(projectName != null && projectName.isNotEmpty, 'Must have non-Null, non-empty project name');
+    final build = DBProjectBloc(name: projectName);
+    final content = await build._dbProjectIO.loadProject();
+    if (content.isEmpty) return build;
+    final Map<String, dynamic> map = jsonDecode(content);
+    return DBProjectBloc.fromJson(map);
+  }
 
   /// File manager to read/write files to the local store.
   File.DBProjectIO _dbProjectIO;
@@ -29,12 +38,17 @@ class DBProjectBloc with JsonData {
   /// The list of tables, and field descriptions for all the tables used within a single app
   List<DBRecord> _tables = List();
 
-  String get asLibraryRootName => '$libraryPrefix$filename$librarySuffix';
+  String get asLibraryRootName => '${Headers.libraryPrefix}$filename${Headers.librarySuffix}';
   String get filename => Strings.flutterFilenameStyle(using: name);
 
   /// The umbrellas name of the project, it serves as the root name of the .json file
   /// created with the table and fields blueprints.
   final String name;
+
+  /// Constructor
+  DBProjectBloc({this.name}) : assert(name != null && name.isNotEmpty) {
+    _dbProjectIO = File.DBProjectIO(name);
+  }
 
   /// Providing a table name will keep records of that table at the top of the list, good when
   /// the UI is showing most recently added fields
@@ -49,6 +63,12 @@ class DBProjectBloc with JsonData {
     return temp;
   }
 
+  List<DBRecord> columnsInTable({String name}) {
+    var subset = _tables.where((rec) => rec.name.toLowerCase() == name.toLowerCase()).toList()
+      ..sort((a, b) => a.field.toLowerCase().compareTo(b.field.toLowerCase()));
+    return subset;
+  }
+
   /// Get just the list of table names. These are needed for code generation.
   List<String> tableNameList() {
     List<String> result = List();
@@ -59,22 +79,6 @@ class DBProjectBloc with JsonData {
       currentName = record.name.toLowerCase();
     }
     return result;
-  }
-
-  DBProjectBloc({this.name}) : assert(name != null && name.isNotEmpty) {
-    _dbProjectIO = File.DBProjectIO(name);
-  }
-
-  /// Most of the creation process is async so this async helper method should be used to
-  /// create the instance of the class. It also insures that if the project info exists on
-  /// the device the data is loaded, or created if a new project.
-  static Future<DBProjectBloc> make(String projectName) async {
-    assert(projectName != null && projectName.isNotEmpty, 'Must have non-Null, non-empty project name');
-    final build = DBProjectBloc(name: projectName);
-    final content = await build._dbProjectIO.loadProject();
-    if (content.isEmpty) return build;
-    final Map<String, dynamic> map = jsonDecode(content);
-    return DBProjectBloc.fromJson(map);
   }
 
   /// Factory method where .json file from the local store that has been converted into a Map

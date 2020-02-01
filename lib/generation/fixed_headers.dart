@@ -27,3 +27,13 @@ String tableHeader() {
   final result = _fileHeader.replaceFirst('[DATE]', timestamp);
   return result;
 }
+
+/// Constants used in composing file names, as these are shared across creating various files
+/// they are fixed any changes to how names are done requires just changing these.
+const columnPrefix = 'column';
+const libraryPrefix = 'sqlite_';
+const librarySuffix = '_library';
+const tablePrefix = 'table_';
+
+const int classIndent = 3;
+const int trailingComment = 5;

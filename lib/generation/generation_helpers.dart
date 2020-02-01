@@ -22,10 +22,10 @@ List<String> makeGetter(String item, {bool includeSetter = true, @required int l
   assert(type != null);
   value ??= '_' + item;
   List<String> results = List();
-  String result = '$type get $item => $value;';
-  results.add(result.padLeft(result.length + leadingSpaces, ' '));
-  result = 'void set${Strings.capitalize(item)}($type newValue) => value = newValue;';
-  if (includeSetter) results.add(result.padLeft(result.length + leadingSpaces, ' '));
+  String result = Strings.intent('$type get $item => $value;', leadingSpaces);
+  results.add(result);
+  result = Strings.intent('void set${Strings.capitalize(item)}($type newValue) => value = newValue;', leadingSpaces);
+  if (includeSetter) results.add(result);
   return results;
 }
 

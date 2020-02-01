@@ -5,6 +5,7 @@ import 'package:flutter_db_input_widget/flutter_db_input_widget.dart';
 import 'package:flutter_db_input_widget/generation/fixed_headers.dart' as Headers;
 import 'package:flutter_db_input_widget/generation/generation_helpers.dart';
 import 'package:flutter_db_input_widget/io/db_project_io.dart';
+import 'package:flutter_db_input_widget/model/db_record.dart';
 import 'package:flutter_strings/flutter_strings.dart' as Strings;
 import 'package:flutter_tracers/trace.dart' as Log;
 
@@ -33,6 +34,16 @@ class Generator {
     return null;
   }
 
+  Future<void> _createColumnConstants({GeneratorIO generatorIO, String tableName}) async {
+    List<DBRecord> columnRecords = projectBloc.columnsInTable(name: tableName);
+    generatorIO.add(['', '/// Column keys'], padding: Headers.classIndent);
+    for (DBRecord record in columnRecords) {
+      String text =
+          "static const String ${Headers.columnPrefix}${Strings.capitalize(record.field)} = '${Strings.lowercase(record.field)}';${record.asTrailingComment}";
+      generatorIO.add([text], padding: Headers.classIndent);
+    }
+  }
+
   Future<dynamic> _createLibraryFile() async {
     try {
       var library = await _generateLibrary(projectBloc: projectBloc);
@@ -51,6 +62,7 @@ class Generator {
       generatorIO.add([Headers.tableHeader()]);
       generatorIO.add(['class $tableName {']);
       generatorIO.add(['/// *** BODY ***']);
+      await _createColumnConstants(generatorIO: generatorIO, tableName: tableName);
       generatorIO.add(['}']);
       final path = await generatorIO.createTableFilePath(dbProjectBloc: projectBloc);
       final file = IO.File(path);
@@ -83,7 +95,7 @@ class Generator {
           throw CallbackStoppedGeneration('generateLibrary: stopped while creating paths', HelperErrors.userStop);
         }
         final line =
-            "export 'package:${projectBloc.asLibraryRootName}/${DBProjectBloc.tablePrefix}$asFlutterFilename/$asFlutterFilename$suffix';";
+            "export 'package:${projectBloc.asLibraryRootName}/${Headers.tablePrefix}$asFlutterFilename/$asFlutterFilename$suffix';";
         generatorIO.add([line]);
         await Future.delayed(Duration(milliseconds: 100));
       }
