@@ -210,7 +210,7 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
                             return true;
                           },
                           projectBloc: projectBloc)
-                      .go();
+                      .start();
                 },
                 height: 60.0,
                 width: 400.0,

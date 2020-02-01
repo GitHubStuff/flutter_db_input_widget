@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_db_input_widget/io/db_project_io.dart' as File;
 import 'package:flutter_db_input_widget/model/db_record.dart';
 import 'package:flutter_db_input_widget/src/broadcast_stream.dart';
+import 'package:flutter_strings/flutter_strings.dart' as Strings;
 
 import '../flutter_db_input_widget.dart';
 
@@ -14,18 +15,26 @@ import '../flutter_db_input_widget.dart';
 /// dart code.
 ///
 class DBProjectBloc with JsonData {
+  static const libraryPrefix = 'sqlite_';
+  static const librarySuffix = '_library';
+  static const tablePrefix = 'table_';
+
   /// Used as keys in for json text to avoid typo's when using literal strings
   static const _Name = 'name';
   static const _Tables = 'tables';
 
-  /// The umbrellas name of the project, it serves as the root name of the .json file
-  /// created with the table and fields blueprints.
-  final String name;
+  /// File manager to read/write files to the local store.
+  File.DBProjectIO _dbProjectIO;
 
   /// The list of tables, and field descriptions for all the tables used within a single app
   List<DBRecord> _tables = List();
 
-  int get tableCount => _tables.length;
+  String get asLibraryRootName => '$libraryPrefix$filename$librarySuffix';
+  String get filename => Strings.flutterFilenameStyle(using: name);
+
+  /// The umbrellas name of the project, it serves as the root name of the .json file
+  /// created with the table and fields blueprints.
+  final String name;
 
   /// Providing a table name will keep records of that table at the top of the list, good when
   /// the UI is showing most recently added fields
@@ -51,9 +60,6 @@ class DBProjectBloc with JsonData {
     }
     return result;
   }
-
-  /// File manager to read/write files to the local store.
-  File.DBProjectIO _dbProjectIO;
 
   DBProjectBloc({this.name}) : assert(name != null && name.isNotEmpty) {
     _dbProjectIO = File.DBProjectIO(name);
