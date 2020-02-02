@@ -17,7 +17,7 @@ class GeneratorIO extends DBProjectIO {
   List<String> _lines = List();
 
   /// Getters
-  String get blankLine => '\n';
+  void get blankLine => _lines.add('\n');
   String get content => _lines.join();
 
   /// Methods
@@ -40,7 +40,7 @@ class GeneratorIO extends DBProjectIO {
   }
 
   Future<dynamic> createTableFilePath({DBProjectBloc dbProjectBloc}) async {
-    final libraryPath = dbProjectBloc.asLibraryRootName;
+    final libraryPath = 'tables';
     final tablePath = 'table_$filename';
     final tableFilename = '$filename$fileSuffix';
     try {

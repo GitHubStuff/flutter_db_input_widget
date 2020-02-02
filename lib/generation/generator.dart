@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_db_input_widget/flutter_db_input_widget.dart';
 import 'package:flutter_db_input_widget/generation/fixed_headers.dart' as Headers;
 import 'package:flutter_db_input_widget/generation/generation_helpers.dart';
+import 'package:flutter_db_input_widget/generation/library_generator.dart';
 import 'package:flutter_db_input_widget/generation/sqlite_declarations.dart';
 import 'package:flutter_db_input_widget/io/db_project_io.dart';
 import 'package:flutter_db_input_widget/model/db_record.dart';
@@ -27,7 +28,10 @@ class Generator {
 
   Future<dynamic> start() async {
     /// File at the root level that has all the 'export' statements and constants for table names
-    final result = await _createLibraryFile();
+    GeneratorIO libraryIO = GeneratorIO(rootFileName: projectBloc.filename, suffix: suffix);
+
+    final LibraryGenerator libraryGenerator = LibraryGenerator(callback: callback, generatorIO: libraryIO, projectBloc: projectBloc);
+    final result = await libraryGenerator.createLibraryFile();
     if (result != null) return result;
 
     /// Get all the table names for the project, and then create classes(class creations involves A LOT of phases) for each
@@ -125,54 +129,6 @@ class Generator {
     generatorIO.blankLine;
     generatorIO.add(assignments, padding: Headers.parameterIntent);
   }
-
-  /// This creates the file: sqlite_{project}_library.g.dart
-  /// At the 'root' of the generated class is the project root, with a file that contains
-  /// string constants for each table name, and the 'export' states to the files paths
-  /// with those files.
-  Future<dynamic> _createLibraryFile() async {
-    try {
-      var library = await _generateLibrary(projectBloc: projectBloc);
-      final s = (library as GeneratorIO).content;
-      await (library as GeneratorIO).write(s);
-      return null;
-    } catch (error) {
-      Log.e('_createLibraryFile (error): ${error.toString()}');
-      return error;
-    }
-  }
-
-  /// Creates a file named {project}.g.dart that will be the database file for the project,
-  /// also builds a list to "_filePaths" that is a Map<String,String> with the table name
-  /// as key and the path to the file (usable by Dart.io) to where the table file should be written
-  Future<dynamic> _generateLibrary({@required DBProjectBloc projectBloc}) async {
-    assert(projectBloc != null);
-    try {
-      final generatorIO = GeneratorIO(rootFileName: projectBloc.asLibraryRootName, suffix: suffix);
-      final content = 'library ${projectBloc.asLibraryRootName};';
-      final tableNameList = projectBloc.tableNameList();
-      generatorIO.add([Headers.libraryHeader(), content, '']);
-      final tableNameConstList = _generateTableNameConstString(tableNameList);
-      generatorIO.add(tableNameConstList);
-      for (String tablename in tableNameList) {
-        if (!callback('Created path for ${projectBloc.pathForTable(tablename)}')) {
-          Log.w('Callback stopped code generation');
-          throw CallbackStoppedGeneration('generateLibrary: stopped while creating paths', HelperErrors.userStop);
-        }
-        final line = "export ${projectBloc.pathForTable(tablename)};";
-        generatorIO.add([line]);
-        await Future.delayed(Duration(milliseconds: 100));
-      }
-      return generatorIO;
-    } catch (error) {
-      Log.e('generateLibrary (error): ${error.toString()}');
-    }
-  }
-
-  /// In the sqlite_{project}_library.g.dart file there are 'const String' values for each table name, this creates
-  /// those strings to be written to the file;
-  List<String> _generateTableNameConstString(List<String> tableNames) =>
-      tableNames.map((name) => 'const String table${Strings.capitalize(name)};').toList(growable: true)..add('');
 
   /// After the table file has been composed with all the fields, the contents are written to
   /// the file {tablename}.g.dart, this will have the class definition and all the methods used to create and
