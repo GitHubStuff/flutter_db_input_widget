@@ -12,12 +12,15 @@ dependencies:
   cupertino_icons: ^0.1.3
   flutter:
     sdk: flutter
-  flutter_theme_package:
+  flutter_sqlite_controller:
     git:
-      url: https://github.com/GitHubStuff/flutter_theme_package.git
+      url: https://github.com/GitHubStuff/flutter_sqlite_controller.git
   flutter_strings:
     git:
       url: https://github.com/GitHubStuff/flutter_strings.git
+  flutter_theme_package:
+    git:
+      url: https://github.com/GitHubStuff/flutter_theme_package.git
   flutter_tracers:
     git:
       url: https://github.com/GitHubStuff/flutter_tracers.git

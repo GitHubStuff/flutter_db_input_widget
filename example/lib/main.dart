@@ -294,7 +294,7 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
                       columns: DBRecord.dataColumns(context),
                       rows: projectBloc.dataRows(
                         context,
-                        preferTable: tableName.toLowerCase(),
+                        preferTable: (tableName ?? '').toLowerCase(),
                         sink: inputSelectedStream.sink,
                         style: null,
                       ))

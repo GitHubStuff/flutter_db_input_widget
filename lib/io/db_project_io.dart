@@ -12,18 +12,28 @@ import 'package:path_provider/path_provider.dart';
 /// Write will push a string to the file (overwriting any existing data)
 ///
 class GeneratorIO extends DBProjectIO {
-  GeneratorIO({String rootFileName, String suffix = '.g.dart'}) : super(rootFileName, fileSuffix: suffix);
+  final String rootFileName;
+  GeneratorIO({this.rootFileName, String suffix = '.g.dart'}) : super(rootFileName, fileSuffix: suffix);
   List<String> _lines = List();
 
+  /// Getters
+  String get blankLine => '\n';
+  String get content => _lines.join();
+
+  /// Methods
   int add(List<String> lines, {int padding = 0}) {
     assert(lines != null);
     assert(padding >= 0);
-    var result = lines.map((e) => '${Strings.intent(e, padding)}\n').toList();
+    var result = lines.map((e) => '${Strings.indent(e, padding)}\n').toList();
     _lines.addAll(result);
     return _lines.length;
   }
 
-  String get content => _lines.join();
+  void newSection({String name, List<String> body, int padding = 0}) {
+    blankLine;
+    if (name != null) add([name.startsWith('//') ? name : '/// $name'], padding: padding);
+    if (body != null) add(body, padding: padding);
+  }
 
   Future<void> write(String content) async {
     await writeProject(contents: content);

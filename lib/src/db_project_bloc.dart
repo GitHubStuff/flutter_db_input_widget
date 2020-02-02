@@ -50,6 +50,13 @@ class DBProjectBloc with JsonData {
     _dbProjectIO = File.DBProjectIO(name);
   }
 
+  /// Create a string that has the path
+  String pathForTable(String tablename) {
+    final asFlutterFilename = Strings.flutterFilenameStyle(using: tablename);
+    final result = "'package:$asLibraryRootName/${Headers.tablePrefix}$asFlutterFilename/$asFlutterFilename$suffix'";
+    return result;
+  }
+
   /// Providing a table name will keep records of that table at the top of the list, good when
   /// the UI is showing most recently added fields
   List<DBRecord> sortedTableList([String selectedTable = '']) {
