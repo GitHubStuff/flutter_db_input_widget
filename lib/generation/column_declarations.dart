@@ -1,4 +1,3 @@
-import 'package:flutter_db_input_widget/generation/fixed_headers.dart';
 import 'package:flutter_db_input_widget/model/db_record.dart';
 import 'package:flutter_strings/flutter_strings.dart' as Strings;
 
@@ -29,6 +28,7 @@ class ColumnDeclarations {
   final DBRecord record;
   const ColumnDeclarations({this.record});
 
+  /// Getters
   String get columnName => Strings.lowercase(record.field);
   String get columnSetter => Strings.capitalize(record.field);
   String get targetName => Strings.capitalize(record.target);
@@ -40,7 +40,7 @@ class ColumnDeclarations {
       case ColumnTypes.boolean:
         return _booleanColumn();
       case ColumnTypes.clazz:
-        return _typeColumn();
+        return _classColumn();
       case ColumnTypes.date:
         return _dateTimeColumn();
       case ColumnTypes.double:
@@ -54,8 +54,8 @@ class ColumnDeclarations {
     }
   }
 
-  String get constructorParameter => Strings.indent('${_columnType()} $columnName,', parameterIntent);
-  String get constructorParameterAssignment => Strings.indent('set$columnSetter($columnName);', parameterIntent);
+  String get constructorParameter => '${_columnType()} $columnName,';
+  String get constructorParameterAssignment => 'set$columnSetter($columnName);';
 
   String _columnType() {
     switch (record.columnType) {
@@ -82,9 +82,7 @@ class ColumnDeclarations {
     List<String> result = List();
     result.add('List<$targetName> _$columnName;${record.trailingComment}');
     result.add('List<$targetName> get $columnName => _$columnName;');
-    result.add('$targetName get ${columnName}At(int index) => _$columnName[index];');
-    result.add('void set$columnSetter(List<dynamic> newValue) => _$columnName = newValue;');
-    result.add('void set${columnSetter}At(int index, dynamic newValue) => _$columnName(index) = newValue;');
+    result.add('void set$columnSetter(List<dynamic> newValue) => _$columnName = $targetName.usingJsonArray(newValue);');
     return result;
   }
 
@@ -92,15 +90,25 @@ class ColumnDeclarations {
     List<String> result = List();
     result.add('int _$columnName;${record.trailingComment}');
     result.add('bool get $columnName => (_$columnName == 1);');
-    result.add('void set$columnSetter(dynamic newValue) => _$columnName = DB.getBoolean(newValue)');
+    result.add('void set$columnSetter(dynamic newValue) => _$columnName = SQL.getBoolean(newValue)');
+    return result;
+  }
+
+  List<String> _classColumn() {
+    List<String> result = List();
+    result.add('${record.target} _$columnName;${record.trailingComment}');
+    result.add('${record.target} get $columnName => _$columnName;');
+    result.add('void set${Strings.capitalize(record.target)}(dynamic newValue) => _$columnName = (newValue is ${record.target})');
+    result.add('   ? newValue');
+    result.add('   : ${record.target}.fromJson(newValue);');
     return result;
   }
 
   List<String> _dateTimeColumn() {
     List<String> result = List();
     result.add('String _$columnName;${record.trailingComment}');
-    result.add('DateTime get $columnName => DB.getDateTime(_$columnName);');
-    result.add('void set$columnSetter(dynamic newValue) => _$columnName = DB.dateString(newValue)');
+    result.add('DateTime get $columnName => SQL.getDateTime(_$columnName);');
+    result.add('void set$columnSetter(dynamic newValue) => _$columnName = SQL.dateString(newValue)');
     return result;
   }
 

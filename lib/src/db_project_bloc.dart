@@ -38,6 +38,7 @@ class DBProjectBloc with JsonData {
   /// The list of tables, and field descriptions for all the tables used within a single app
   List<DBRecord> _tables = List();
 
+  ///* Getters
   String get asLibraryRootName => '${Headers.libraryPrefix}$filename${Headers.librarySuffix}';
   String get filename => Strings.flutterFilenameStyle(using: name);
 
@@ -53,7 +54,7 @@ class DBProjectBloc with JsonData {
   /// Create a string that has the path
   String pathForTable(String tablename) {
     final asFlutterFilename = Strings.flutterFilenameStyle(using: tablename);
-    final result = "'package:$asLibraryRootName/tables/$asFlutterFilename/$asFlutterFilename$suffix'";
+    final result = "'package:$asLibraryRootName/tables/$asFlutterFilename/$asFlutterFilename${Headers.suffix}'";
     return result;
   }
 

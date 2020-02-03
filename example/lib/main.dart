@@ -207,6 +207,7 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
                             setState(() {
                               caption = message;
                             });
+                            Log.v(message, false, '~');
                             return true;
                           },
                           projectBloc: projectBloc)

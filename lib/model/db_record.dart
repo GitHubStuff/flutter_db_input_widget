@@ -40,6 +40,7 @@ class DBRecord with JsonData {
   final String type;
   final String target;
   final String comment;
+
   DBRecord._private(this.name, this.field, this.json, this.type, this.target, this.comment)
       : assert(name != null),
         assert(field != null),
