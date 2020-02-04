@@ -20,7 +20,7 @@ class FactoryDeclarations {
     List<String> toJsonList = List();
     final tablename = generatorIO.rootFileName;
     generatorIO.newSection(
-        name: '/// Factory fromJson (just does primative types)',
+        name: '///- Factory fromJson',
         body: ['factory $tablename.fromJson(Map<String, dynamic> json) { '],
         padding: Headers.classIndent);
     generatorIO.add(['var _instance = ${generatorIO.rootFileName}('], padding: Headers.levelIndent(2));
@@ -31,19 +31,20 @@ class FactoryDeclarations {
     List<DBRecord> columnRecords = projectBloc.columnsInTable(name: tablename);
     for (DBRecord record in columnRecords) {
       final column = ColumnDeclarations(record: record);
-      if (record.columnType == ColumnTypes.clazz || record.columnType == ColumnTypes.array) continue;
-      if (record.columnType == ColumnTypes.boolean) {
-        generatorIO.add(["${column.columnName} : SQL.getBoolean(json['${column.columnName}']),"], padding: Headers.levelIndent(3));
-      } else if (record.columnType == ColumnTypes.date) {
-        generatorIO.add(["${column.columnName} : SQL.getDateTime(json['${column.columnName}']),"], padding: Headers.levelIndent(3));
-      } else {
-        generatorIO.add(["${column.columnName} : json['${column.columnName}'],"], padding: Headers.levelIndent(3));
+      generatorIO.add(["${column.columnName} : json['${column.columnName}'],"], padding: Headers.levelIndent(3));
+      if (record.columnType == ColumnTypes.clazz) {
+        toJsonList.add("'${column.columnName}': ${column.columnName}.toJson(),");
+        continue;
+      }
+      if (record.columnType == ColumnTypes.array) {
+        toJsonList.add("'${column.columnName}': jsonArray(${column.columnName}),");
+        continue;
       }
       toJsonList.add("'${column.columnName}': ${column.columnName},");
     }
-    generatorIO.add(['return _instance;'], padding: Headers.levelIndent(2));
+    generatorIO.add([');', 'return _instance;'], padding: Headers.levelIndent(2));
     generatorIO.add(['}'], padding: Headers.classIndent);
-    generatorIO.newSection(name: '/// ToJson', body: ['Map<String, dynamic> toJson() => {'], padding: Headers.classIndent);
+    generatorIO.newSection(name: '///- ToJson', body: ['Map<String, dynamic> toJson() => {'], padding: Headers.classIndent);
     generatorIO.add(["'${Headers.sqlRowid}': _${Headers.sqlRowid} ?? 0,"], padding: Headers.parameterIntent);
     generatorIO.add(["'${Headers.parentRowId}': _${Headers.parentRowId} ?? 0,"], padding: Headers.parameterIntent);
     generatorIO.add(toJsonList, padding: Headers.parameterIntent);

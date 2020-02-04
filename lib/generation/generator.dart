@@ -54,13 +54,14 @@ class Generator {
       _createImportList(generatorIO: generatorIO);
 
       /// Add 'import' for any fields that are class or arrays
-      generatorIO.add(['class $tablename {']);
+      generatorIO.add(['class $tablename extends SQLParse<$tablename>{']);
       generatorIO.add(['/// *** BODY ***']);
       await _createColumnConstants(generatorIO: generatorIO);
       await _createColumnDeclarations(generatorIO: generatorIO);
       await _createConstructor(generatorIO: generatorIO);
-      final arraysText = Headers.arrayMaker(tablename);
-      generatorIO.add([arraysText]);
+      generatorIO.blankLine;
+      final staticBuilders = Headers.createStaticBuilders(generatorIO.projectName);
+      generatorIO.add([staticBuilders]);
       await FactoryDeclarations(callback: callback, generatorIO: generatorIO, projectBloc: projectBloc).makeFactories();
 
       final sqLiteDeclarations = SQLiteDeclarations(callback: callback, generatorIO: generatorIO, projectBloc: projectBloc);
@@ -108,10 +109,18 @@ class Generator {
 
   Future<void> _createColumnDeclarations({@required GeneratorIO generatorIO}) async {
     List<DBRecord> columnRecords = projectBloc.columnsInTable(name: generatorIO.rootFileName);
-    generatorIO.newSection(name: '/// Column declarations', padding: Headers.classIndent);
-    generatorIO.add(['int _${Headers.sqlRowid};   /// SQLite column'], padding: Headers.classIndent);
-    generatorIO
-        .add(['int _${Headers.parentRowId};     /// To pair class to other classes and arrays'], padding: Headers.classIndent);
+    generatorIO.newSection(name: '///- Column declarations', padding: Headers.classIndent);
+    generatorIO.add([
+      'int _${Headers.sqlRowid};   /// SQLite column',
+      'int get ${Headers.sqlRowid} = _${Headers.sqlRowid} ?? 0;',
+      'void set${Strings.capitalize(Headers.sqlRowid)}(int newValue) => _${Headers.sqlRowid} = newValue ?? 0;'
+    ], padding: Headers.classIndent);
+    generatorIO.blankLine;
+    generatorIO.add([
+      'int _${Headers.parentRowId};     /// To pair class to other classes and arrays',
+      'int get ${Headers.parentRowId} => _${Headers.parentRowId} ?? 0;',
+      'void set${Strings.capitalize(Headers.parentRowId)}(int newValue) => _${Headers.parentRowId} = newValue ?? 0;',
+    ], padding: Headers.classIndent);
     generatorIO.blankLine;
     for (DBRecord record in columnRecords) {
       List<String> declaration = ColumnDeclarations(record: record).columnDeclaration();
@@ -127,8 +136,8 @@ class Generator {
     generatorIO.add(['int ${Headers.sqlRowid},', 'int ${Headers.parentRowId}'], padding: Headers.levelIndent(2));
     List<DBRecord> columnRecords = projectBloc.columnsInTable(name: tablename);
     List<String> assignments = List();
-    assignments.add('_${Headers.sqlRowid} = (${Headers.sqlRowid} ?? 0);');
-    assignments.add('_${Headers.parentRowId} = (${Headers.parentRowId} ?? 0);');
+    assignments.add('set${Strings.capitalize(Headers.sqlRowid)})(${Headers.sqlRowid});');
+    assignments.add('set${Strings.capitalize(Headers.parentRowId)})(${Headers.parentRowId});');
     for (DBRecord record in columnRecords) {
       final declaration = ColumnDeclarations(record: record);
       generatorIO.add([declaration.constructorParameter], padding: Headers.levelIndent(2));

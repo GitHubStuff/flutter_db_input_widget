@@ -26,31 +26,21 @@ String tableHeader() {
   return result;
 }
 
-String arrayFactory(String classname, String targetName) {
+String createStaticBuilders(String classname) {
   final code = '''
-  factory $classname.fromArray([Map<String, dynamic> data, int parentId = 0) {
-    for (Map<String, dynamic> item in data) {
-       if ((item['$parentRowId'] ?? 0) == 0) {
-         item['$parentRowId'] = parentId;
-         $targetName.fromJson(item);
-       }
-    }
+  static $classname ${classname}Build(dynamic: data) {
+    if (data is map) return $classname.fromJson(data);
+    if (data is $classname) return data;
+    throw Exception('static ${classname}Build could not parse: \${data.toString()}');
   }
-''';
-  return code;
-}
-
-String arrayMaker(String classname) {
-  final code = '''
   
-  /// Creates a List<$classname> to translate and json-array to array of $classname
-  static List<$classname> usingJsonArray(List<Map<String, dynamic>> jsonArray) {
-     List<$classname> result = List();
-     for (Map<String, dynamic> json in jsonArray) {
-        final value = (json is $classname) ? json : $classname.fromJson(json);
-        result.add(value);
-     }
-     return result;
+  static List<$classname> ${classname}BuildArray(List<dynamic> array) {
+    List<$classname> result = List();
+    for (dynamic item in array) {
+       if (item is $classname) result.add(item);
+       if (item is Map) result.add($classname.fromJson(item));
+    }
+    return result;
   }
 ''';
   return code;

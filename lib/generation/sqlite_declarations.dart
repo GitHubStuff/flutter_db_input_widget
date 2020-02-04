@@ -47,7 +47,7 @@ class SQLiteDeclarations {
     String previousKey = '${Headers.parentRowId}';
     String previousValue = '\$_${Headers.parentRowId}';
     for (DBRecord record in columnRecords) {
-      final declartion = ColumnDeclarations(record: record);
+      final declaration = ColumnDeclarations(record: record);
       if (record.columnType == ColumnTypes.array || record.columnType == ColumnTypes.clazz) continue;
       keyList.add(previousKey + ',');
       valueList.add(previousValue + ',');
@@ -58,14 +58,14 @@ class SQLiteDeclarations {
           continue;
         case ColumnTypes.date:
         case ColumnTypes.string:
-          previousKey = '${declartion.columnName}';
-          previousValue = '"\$_${declartion.columnName}"';
+          previousKey = '${declaration.columnName}';
+          previousValue = '"\$_${declaration.columnName}"';
           continue;
         case ColumnTypes.boolean:
         case ColumnTypes.double:
         case ColumnTypes.integer:
-          previousKey = '${declartion.columnName}';
-          previousValue = '\$_${declartion.columnName}';
+          previousKey = '${declaration.columnName}';
+          previousValue = '\$_${declaration.columnName}';
           continue;
         default:
           Log.f('sqlite_declartion: unknown type ${record.columnType}');
@@ -83,5 +83,29 @@ class SQLiteDeclarations {
     generatorIO.add(['}'], padding: Headers.classIndent);
     callback('sqlite_declarations: completed sqlite insert');
     return null;
+  }
+
+  Future<void> createSQLSave() {
+    generatorIO.newSection(
+      name: '///- SQLite save record',
+      body: ['Future<void> saveToSql() async {'],
+      padding: Headers.classIndent,
+    );
+    generatorIO.add(['final theParentId = await insert();'], padding: Headers.levelIndent(1));
+    generatorIO.blankLine;
+    List<DBRecord> columnRecords = projectBloc.columnsInTable(name: generatorIO.rootFileName);
+    for (DBRecord record in columnRecords) {
+      final declaration = ColumnDeclarations(record: record);
+      if (record.columnType == ColumnTypes.array) {
+        String code = '''
+    for (${declaration.targetName} item in ${declaration.columnName}) {
+       item.setParentRowId(theParentId);
+       item.save();
+    }
+        ''';
+        continue;
+      }
+      TODO: Create the one for classes;
+    }
   }
 }
