@@ -25,8 +25,9 @@ class FactoryDeclarations {
         padding: Headers.classIndent);
     generatorIO.add(['var _instance = ${generatorIO.rootFileName}('], padding: Headers.levelIndent(2));
     generatorIO.add([
-      "${Headers.sqlRowid} : json[${Headers.sqlRowid}] ?? 0,",
-      "${Headers.parentRowId} : json['${Headers.parentRowId}] ?? 0,",
+      "${Headers.sqlRowid} : json['${Headers.sqlRowid}'] ?? 0,",
+      "${Headers.parentRowId} : json['${Headers.parentRowId}'] ?? 0,",
+      "${Headers.parentClassName} : json['${Headers.parentClassName}'] ?? '',",
     ], padding: Headers.levelIndent(3));
     List<DBRecord> columnRecords = projectBloc.columnsInTable(name: tablename);
     for (DBRecord record in columnRecords) {
@@ -37,7 +38,7 @@ class FactoryDeclarations {
         continue;
       }
       if (record.columnType == ColumnTypes.array) {
-        toJsonList.add("'${column.columnName}': jsonArray(${column.columnName}),");
+        toJsonList.add("'${column.columnName}': jsonArray<${column.targetName}>(${column.columnName}),");
         continue;
       }
       toJsonList.add("'${column.columnName}': ${column.columnName},");
@@ -45,8 +46,9 @@ class FactoryDeclarations {
     generatorIO.add([');', 'return _instance;'], padding: Headers.levelIndent(2));
     generatorIO.add(['}'], padding: Headers.classIndent);
     generatorIO.newSection(name: '///- ToJson', body: ['Map<String, dynamic> toJson() => {'], padding: Headers.classIndent);
-    generatorIO.add(["'${Headers.sqlRowid}': _${Headers.sqlRowid} ?? 0,"], padding: Headers.parameterIntent);
-    generatorIO.add(["'${Headers.parentRowId}': _${Headers.parentRowId} ?? 0,"], padding: Headers.parameterIntent);
+    generatorIO.add(["'${Headers.sqlRowid}': ${Headers.sqlRowid} ?? 0,"], padding: Headers.parameterIntent);
+    generatorIO.add(["'${Headers.parentRowId}': ${Headers.parentRowId} ?? 0,"], padding: Headers.parameterIntent);
+    generatorIO.add(["'${Headers.parentClassName}': ${Headers.parentClassName} ?? '',"], padding: Headers.parameterIntent);
     generatorIO.add(toJsonList, padding: Headers.parameterIntent);
     generatorIO.add(['};'], padding: Headers.classIndent);
   }

@@ -94,7 +94,7 @@ class DBRecord with JsonData {
   ///** Getters
   ColumnTypes get columnType => _typeMatch();
   String get trailingComment => Strings.indent(formattedComment, Headers.trailingComment);
-  String get formattedComment => (comment.trim().isEmpty) ? '' : '/// ${comment.trim()}';
+  String get formattedComment => (comment.trim().isEmpty) ? '' : '// ${comment.trim()}';
 
   ///** Methods
 

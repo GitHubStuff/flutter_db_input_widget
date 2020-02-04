@@ -54,7 +54,7 @@ class DBProjectBloc with JsonData {
   /// Create a string that has the path
   String pathForTable(String tablename) {
     final asFlutterFilename = Strings.flutterFilenameStyle(using: tablename);
-    final result = "'package:$asLibraryRootName/tables/$asFlutterFilename/$asFlutterFilename${Headers.suffix}'";
+    final result = "/table_$asFlutterFilename/$asFlutterFilename${Headers.suffix}";
     return result;
   }
 

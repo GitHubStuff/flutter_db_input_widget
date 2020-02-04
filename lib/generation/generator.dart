@@ -54,7 +54,7 @@ class Generator {
       _createImportList(generatorIO: generatorIO);
 
       /// Add 'import' for any fields that are class or arrays
-      generatorIO.add(['class $tablename extends SQLParse<$tablename>{']);
+      generatorIO.add(['class $tablename extends SQL.SQLParse<$tablename>{']);
       generatorIO.add(['/// *** BODY ***']);
       await _createColumnConstants(generatorIO: generatorIO);
       await _createColumnDeclarations(generatorIO: generatorIO);
@@ -66,7 +66,11 @@ class Generator {
 
       final sqLiteDeclarations = SQLiteDeclarations(callback: callback, generatorIO: generatorIO, projectBloc: projectBloc);
       sqLiteDeclarations.createSQLiteTable();
+      generatorIO.newSection(name: '///- Common SQL statements', body: [Headers.createSQLSelectStatement(tablename)], padding: 0);
+
       sqLiteDeclarations.createSQLInsert();
+      sqLiteDeclarations.createSQLRestore();
+      sqLiteDeclarations.createSQLSave();
 
       generatorIO.add(['}']);
       return null;
@@ -83,7 +87,7 @@ class Generator {
       if (record.columnType == ColumnTypes.array || record.columnType == ColumnTypes.clazz) {
         if (first) generatorIO.blankLine;
         first = false;
-        generatorIO.add(['import ${projectBloc.pathForTable(record.field)}']);
+        generatorIO.add(["import '..${projectBloc.pathForTable(record.target)}';"]);
       }
     }
     if (!first) generatorIO.blankLine;
@@ -111,15 +115,21 @@ class Generator {
     List<DBRecord> columnRecords = projectBloc.columnsInTable(name: generatorIO.rootFileName);
     generatorIO.newSection(name: '///- Column declarations', padding: Headers.classIndent);
     generatorIO.add([
-      'int _${Headers.sqlRowid};   /// SQLite column',
-      'int get ${Headers.sqlRowid} = _${Headers.sqlRowid} ?? 0;',
+      'int _${Headers.sqlRowid};   ///+ SQLite column',
+      'int get ${Headers.sqlRowid} => _${Headers.sqlRowid} ?? 0;',
       'void set${Strings.capitalize(Headers.sqlRowid)}(int newValue) => _${Headers.sqlRowid} = newValue ?? 0;'
     ], padding: Headers.classIndent);
     generatorIO.blankLine;
     generatorIO.add([
-      'int _${Headers.parentRowId};     /// To pair class to other classes and arrays',
+      'int _${Headers.parentRowId};     ///+ To pair class to other classes and arrays',
       'int get ${Headers.parentRowId} => _${Headers.parentRowId} ?? 0;',
       'void set${Strings.capitalize(Headers.parentRowId)}(int newValue) => _${Headers.parentRowId} = newValue ?? 0;',
+    ], padding: Headers.classIndent);
+    generatorIO.blankLine;
+    generatorIO.add([
+      'String _${Headers.parentClassName};   ///+  Part of pairing class to other classes/arrays',
+      "String get ${Headers.parentClassName} => _${Headers.parentClassName} ?? '';",
+      "String set${Strings.capitalize(Headers.parentClassName)}(String newValue) => _${Headers.parentClassName} = newValue ?? '';",
     ], padding: Headers.classIndent);
     generatorIO.blankLine;
     for (DBRecord record in columnRecords) {
@@ -133,11 +143,16 @@ class Generator {
   Future<void> _createConstructor({@required GeneratorIO generatorIO}) async {
     final tablename = generatorIO.rootFileName;
     generatorIO.newSection(name: '///- Constructor', body: ['$tablename({'], padding: Headers.classIndent);
-    generatorIO.add(['int ${Headers.sqlRowid},', 'int ${Headers.parentRowId}'], padding: Headers.levelIndent(2));
+    generatorIO.add([
+      'int ${Headers.sqlRowid},',
+      'int ${Headers.parentRowId},',
+      'String ${Headers.parentClassName},',
+    ], padding: Headers.levelIndent(2));
     List<DBRecord> columnRecords = projectBloc.columnsInTable(name: tablename);
     List<String> assignments = List();
-    assignments.add('set${Strings.capitalize(Headers.sqlRowid)})(${Headers.sqlRowid});');
-    assignments.add('set${Strings.capitalize(Headers.parentRowId)})(${Headers.parentRowId});');
+    assignments.add('set${Strings.capitalize(Headers.sqlRowid)}(${Headers.sqlRowid});');
+    assignments.add('set${Strings.capitalize(Headers.parentRowId)}(${Headers.parentRowId});');
+    assignments.add('set${Strings.capitalize(Headers.parentClassName)}(${Headers.parentClassName});');
     for (DBRecord record in columnRecords) {
       final declaration = ColumnDeclarations(record: record);
       generatorIO.add([declaration.constructorParameter], padding: Headers.levelIndent(2));

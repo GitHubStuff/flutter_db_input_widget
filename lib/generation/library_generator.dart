@@ -39,17 +39,17 @@ class LibraryGenerator {
       final content = 'library ${projectBloc.asLibraryRootName};';
       final tableNameList = projectBloc.tableNameList();
       generatorIO.add([Headers.libraryHeader(), content, '']);
-      final tableNameConstList = _generateTableNameConstString(tableNameList);
-      generatorIO.add(tableNameConstList);
       for (String tablename in tableNameList) {
         if (!callback('Created path for ${projectBloc.pathForTable(tablename)}')) {
           Log.w('Callback stopped code generation');
           throw CallbackStoppedGeneration('generateLibrary: stopped while creating paths', HelperErrors.userStop);
         }
-        final line = "export ${projectBloc.pathForTable(tablename)};";
+        final line = "export 'tables${projectBloc.pathForTable(tablename)}';";
         generatorIO.add([line]);
         await Future.delayed(Duration(milliseconds: 100));
       }
+      final tableNameConstList = _generateTableNameConstString(tableNameList);
+      generatorIO.newSection(name: '///- Constants to refer to table name', body: tableNameConstList);
       return generatorIO;
     } catch (error) {
       Log.e('generateLibrary (error): ${error.toString()}');
@@ -58,7 +58,8 @@ class LibraryGenerator {
 
   /// In the sqlite_{project}_library.g.dart file there are 'const String' values for each table name, this creates
   /// those strings to be written to the file;
-  List<String> _generateTableNameConstString(List<String> tableNames) =>
-      tableNames.map((name) => 'const String table${Strings.capitalize(name)};').toList(growable: true)..add('');
-
+  List<String> _generateTableNameConstString(List<String> tableNames) => tableNames
+      .map((name) => "const String table${Strings.capitalize(name)} = '${Strings.capitalize(name)}';")
+      .toList(growable: true)
+        ..add('');
 }

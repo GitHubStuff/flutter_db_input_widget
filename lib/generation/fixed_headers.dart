@@ -28,13 +28,13 @@ String tableHeader() {
 
 String createStaticBuilders(String classname) {
   final code = '''
-  static $classname ${classname}Build(dynamic: data) {
-    if (data is map) return $classname.fromJson(data);
+  static $classname build(dynamic data) {
+    if (data is Map) return $classname.fromJson(data);
     if (data is $classname) return data;
     throw Exception('static ${classname}Build could not parse: \${data.toString()}');
   }
   
-  static List<$classname> ${classname}BuildArray(List<dynamic> array) {
+  static List<$classname> buildArray(List<dynamic> array) {
     List<$classname> result = List();
     for (dynamic item in array) {
        if (item is $classname) result.add(item);
@@ -44,6 +44,29 @@ String createStaticBuilders(String classname) {
   }
 ''';
   return code;
+}
+
+String createSQLSelectStatement(String tableName) {
+  String sql = '''
+  ///- Return first record of sql query
+  static Future<Map<String, dynamic>> firstSQL({String where, String orderBy = 'rowid asc limit 1'}) async {
+     if (orderBy == null) throw Exception('static first - orderBy string null');
+     List<Map<String, dynamic>> results = await selectSQL(where: where, orderBy: orderBy);
+     return results.length > 0 ? results[0] : null;
+  }
+  
+  ///- Return all records of sql query
+  static Future<List<Map<String, dynamic>>> selectSQL({String where, String orderBy = 'rowid'}) async {
+    String sql = 'SELECT rowid,* from $tableName';
+    if (where != null) sql += ' WHERE \$where';
+    if (orderBy != null) sql += ' ORDER BY \$orderBy';
+    var results = await SQL.SqliteController.database.rawQuery(sql).catchError((error, stack) {
+       throw Exception(error.toString());
+    });
+    return results;
+  }
+''';
+  return sql;
 }
 
 /// Constants used in composing file names, as these are shared across creating various files
@@ -58,6 +81,7 @@ const int parameterIntent = 7;
 const int trailingComment = 5;
 
 const String parentRowId = 'parentRowId';
+const String parentClassName = 'parentClassName';
 const String sqlRowid = 'rowid';
 const String suffix = '.g.txt';
 
