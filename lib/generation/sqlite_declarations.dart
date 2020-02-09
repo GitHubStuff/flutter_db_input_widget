@@ -119,8 +119,7 @@ class SQLiteDeclarations {
         if (first) generatorIO.add(header, padding: Headers.classIndent + 3);
         first = false;
         String code = '''
-         item['${declaration.columnName}'] = await ${declaration.targetName}.restoreJsonFromSQL(where: whereClause);
-        ''';
+         item['${declaration.columnName}'] = await ${declaration.targetName}.restoreJsonFromSQL(where: whereClause);''';
         generatorIO.add([code]);
         continue;
       }
@@ -130,13 +129,12 @@ class SQLiteDeclarations {
         String code = '''
         List<Map<String, dynamic>> tempList = await ${declaration.targetName}.restoreJsonFromSQL(where: whereClause);
         if (tempList.length > 1) debugPrint('⁉️: class property ${declaration.columnName} as \${tempList.length} records!');
-        item['${declaration.columnName}'] = tempList.first;
-        ''';
+        item['${declaration.columnName}'] = tempList.first;''';
         generatorIO.add([code]);
         continue;
       }
     }
-    if (!first) generatorIO.add(['  }']);
+    if (!first) generatorIO.add(['}'], padding: Headers.levelIndent(2));
     generatorIO.add(['    return result;', '}'], padding: Headers.classIndent);
   }
 
@@ -147,13 +145,13 @@ class SQLiteDeclarations {
       padding: Headers.classIndent,
     );
     generatorIO.add(['rowid = await insert();'], padding: Headers.levelIndent(1));
-    generatorIO.blankLine;
     List<DBRecord> columnRecords = projectBloc.columnsInTable(name: generatorIO.rootFileName);
     for (DBRecord record in columnRecords) {
       final declaration = ColumnDeclarations(record: record);
       if (record.columnType == ColumnTypes.array) {
         String code = '''
     for (${declaration.targetName} item in ${declaration.columnName}) {
+       if (item == null) continue;
        item.setParentRowId(rowid);
        item.setParentClassName(${Headers.parentClassName});
        await item.saveToSql();
@@ -163,9 +161,11 @@ class SQLiteDeclarations {
       }
       if (record.columnType == ColumnTypes.clazz) {
         String code = '''
-    ${declaration.columnName}.setParentRowId(rowid);
-    ${declaration.columnName}.setParentClassName(parentClassName);
-    await ${declaration.columnName}.saveToSql();
+    if (${declaration.columnName} != null) {
+      ${declaration.columnName}.setParentRowId(rowid);
+      ${declaration.columnName}.setParentClassName(parentClassName);
+      await ${declaration.columnName}.saveToSql();
+    }
     ''';
         generatorIO.blankLine;
         generatorIO.add([code]);

@@ -27,6 +27,8 @@ class ColumnDeclarations {
   /// Getters
   String get columnName => Strings.lowercase(record.field);
   String get columnSetter => Strings.capitalize(record.field);
+  String get constructorParameter => '${_columnType()} $columnName,';
+  String get constructorParameterAssignment => 'set$columnSetter($columnName);';
   String get targetName => Strings.capitalize(record.target);
 
   List<String> columnDeclaration() {
@@ -50,8 +52,13 @@ class ColumnDeclarations {
     }
   }
 
-  String get constructorParameter => '${_columnType()} $columnName,';
-  String get constructorParameterAssignment => 'set$columnSetter($columnName);';
+  String columnDispose() {
+    if (record.columnType == ColumnTypes.array || record.columnType == ColumnTypes.clazz) {
+      return 'await dispose$columnSetter();';
+    } else {
+      return null;
+    }
+  }
 
   String _columnType() {
     switch (record.columnType) {
@@ -79,14 +86,16 @@ class ColumnDeclarations {
     result.add('List<$targetName> _$columnName;${record.trailingComment}');
     result.add('List<$targetName> get $columnName => _$columnName;');
     result.add('void set$columnSetter(List<dynamic> newValue) => _$columnName = $targetName.buildArray(newValue);');
+    result.add('void dispose$columnSetter() => _$columnSetter.forEach((item) => item.dispose());');
     return result;
   }
 
   List<String> _booleanColumn() {
     List<String> result = List();
     result.add('int _$columnName;${record.trailingComment}');
-    result.add('bool get $columnName => (_$columnName == 1);');
-    result.add('void set$columnSetter(dynamic newValue) => _$columnName = SQL.getBoolean(newValue) ? 1 : 0;');
+    result.add('bool get $columnName => (_$columnName == null) ? null : (_$columnName == 1);');
+    result.add(
+        'void set$columnSetter(dynamic newValue) => _$columnName = (newValue == null) ? null : SQL.getBoolean(newValue) ? 1 : 0;');
     return result;
   }
 
@@ -95,6 +104,7 @@ class ColumnDeclarations {
     result.add('${record.target} _$columnName;${record.trailingComment}');
     result.add('${record.target} get $columnName => _$columnName;');
     result.add('void set$columnSetter(dynamic newValue) => _$columnName = $targetName.build(newValue);');
+    result.add('void dispose$columnSetter() => _$columnName.dispose();');
     return result;
   }
 

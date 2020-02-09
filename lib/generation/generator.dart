@@ -55,7 +55,6 @@ class Generator {
 
       /// Add 'import' for any fields that are class or arrays
       generatorIO.add(['class $tablename extends SQL.SQLParse<$tablename>{']);
-      generatorIO.add(['/// *** BODY ***']);
       await _createColumnConstants(generatorIO: generatorIO);
       await _createColumnDeclarations(generatorIO: generatorIO);
       await _createConstructor(generatorIO: generatorIO);
@@ -64,9 +63,15 @@ class Generator {
       generatorIO.add([staticBuilders]);
       await FactoryDeclarations(callback: callback, generatorIO: generatorIO, projectBloc: projectBloc).makeFactories();
 
+      final disposalMethod = _createDisposeMethod(tablename: tablename, generatorIO: generatorIO);
+      generatorIO.add([disposalMethod]);
+
       final sqLiteDeclarations = SQLiteDeclarations(callback: callback, generatorIO: generatorIO, projectBloc: projectBloc);
       sqLiteDeclarations.createSQLiteTable();
-      generatorIO.newSection(name: '///- Common SQL statements', body: [Headers.createSQLSelectStatement(tablename)], padding: 0);
+      generatorIO.newSection(
+          name: '///- Common SQL statements......',
+          body: [Headers.createSQLSelectStatement(tablename)],
+          padding: Headers.classIndent);
 
       sqLiteDeclarations.createSQLInsert();
       sqLiteDeclarations.createSQLRestore();
@@ -161,6 +166,20 @@ class Generator {
     generatorIO.add(['}){'], padding: Headers.levelIndent(1));
     generatorIO.add(assignments, padding: Headers.levelIndent(2));
     generatorIO.add(['}'], padding: Headers.classIndent);
+  }
+
+  String _createDisposeMethod({@required String tablename, @required GeneratorIO generatorIO}) {
+    GeneratorIO localIO = GeneratorIO(rootFileName: 'fake');
+    localIO.newSection(name: '///- Create dispose/delete method', body: ['void dispose() {'], padding: Headers.classIndent);
+    localIO.add(["await SQL.SqliteController.database.rawDelete('DELETE FROM $tablename WHERE rowid = \$rowid');"],
+        padding: Headers.classIndent + 3);
+    List<DBRecord> columnRecords = projectBloc.columnsInTable(name: generatorIO.rootFileName);
+    for (DBRecord record in columnRecords) {
+      String declaration = ColumnDeclarations(record: record).columnDispose();
+      if (declaration != null) localIO.add([declaration], padding: Headers.classIndent + 3);
+    }
+    localIO.add(['}'], padding: Headers.classIndent);
+    return localIO.content;
   }
 
   /// After the table file has been composed with all the fields, the contents are written to

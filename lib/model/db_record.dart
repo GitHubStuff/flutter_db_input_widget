@@ -119,7 +119,7 @@ class DBRecord with JsonData {
     cells.add(DataCell(Text(json, style: style)));
     cells.add(DataCell(Text(typeDetail(), style: style)));
     cells.add(DataCell(Text(target, style: style)));
-    cells.add(DataCell(Text(comment, style: style)));
+    cells.add(DataCell(Text(comment, style: TextStyle(fontSize: 16.0))));
     return cells;
   }
 
