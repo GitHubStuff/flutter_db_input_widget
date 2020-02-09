@@ -316,8 +316,9 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
         assert(dbRecord != null);
         setState(() {
           fieldInput.copyFromDB(context: context, record: dbRecord);
-          tableName = dbRecord.name;
           tabletInputLineKey.currentState.setVisibility(fieldInput);
+          tableName = dbRecord.name;
+          projectBloc.remove(dbRecord: dbRecord);
           tableTextEditingController.text = tableName;
         });
       } catch (err) {

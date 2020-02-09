@@ -151,6 +151,17 @@ class DBProjectBloc with JsonData {
     return null;
   }
 
+  /// When the user selects a row, that row is moved into the edit fields and removed from the list (a way to delete a row/field)
+  int remove({@required DBRecord dbRecord}) {
+    assert(dbRecord != null);
+    final field = dbRecord.field;
+    final table = dbRecord.name;
+    final index = find(field: field, inTable: table);
+    assert(index != null && index >= 0 && index < _tables.length);
+    _tables.removeAt(index);
+    return _tables.length;
+  }
+
   /// Write the collected table information to the {projectName}.json file.
   Future<void> writeTablesToFile({@required bool prettyPrint}) async {
     _tables.sort((a, b) => (a.name + a.field).toLowerCase().compareTo((b.name + b.field).toLowerCase()));
