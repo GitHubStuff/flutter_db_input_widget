@@ -72,12 +72,6 @@ class DBRecord with JsonData {
         _comment: comment,
       };
 
-  static DBRecord mock([String table = 'MockTable']) {
-    final field = 'J' + DateTime.now().toLocal().toIso8601String().substring(20);
-    var result = DBRecord._private('$table', '$field', 'mockJson', 'c', 'mockTarget', 'mockComment');
-    return result;
-  }
-
   static List<DataColumn> dataColumns(BuildContext context) {
     TextStyle textStyle = TextStyle(fontSize: UI.getTextSizes(UI.TextSizes.display1));
     List<DataColumn> columns = List();
