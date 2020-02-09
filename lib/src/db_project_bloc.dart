@@ -25,6 +25,7 @@ class DBProjectBloc with JsonData {
   /// the device the data is loaded, or created if a new project.
   static Future<DBProjectBloc> make(String projectName) async {
     assert(projectName != null && projectName.isNotEmpty, 'Must have non-Null, non-empty project name');
+    projectName = Strings.capitalize(projectName);
     final build = DBProjectBloc(name: projectName);
     final content = await build._dbProjectIO.loadProject();
     if (content.isEmpty) return build;

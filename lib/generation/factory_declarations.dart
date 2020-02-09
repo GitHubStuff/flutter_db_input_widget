@@ -14,6 +14,7 @@ class FactoryDeclarations {
 
   Future<void> makeFactories() async {
     await _fromJsonFactory();
+    await _fromJsonEndpoint();
   }
 
   Future<void> _fromJsonFactory() async {
@@ -46,6 +47,43 @@ class FactoryDeclarations {
     generatorIO.add([');', 'return _instance;'], padding: Headers.levelIndent(2));
     generatorIO.add(['}'], padding: Headers.classIndent);
     generatorIO.newSection(name: '///- ToJson', body: ['Map<String, dynamic> toJson() => {'], padding: Headers.classIndent);
+    generatorIO.add(["'${Headers.sqlRowid}': ${Headers.sqlRowid} ?? 0,"], padding: Headers.parameterIntent);
+    generatorIO.add(["'${Headers.parentRowId}': ${Headers.parentRowId} ?? 0,"], padding: Headers.parameterIntent);
+    generatorIO.add(["'${Headers.parentClassName}': ${Headers.parentClassName} ?? '',"], padding: Headers.parameterIntent);
+    generatorIO.add(toJsonList, padding: Headers.parameterIntent);
+    generatorIO.add(['};'], padding: Headers.classIndent);
+  }
+
+  Future<void> _fromJsonEndpoint() async {
+    List<String> toJsonList = List();
+    final tablename = generatorIO.rootFileName;
+    generatorIO.newSection(
+        name: '///- Factory fromEndpoint',
+        body: ['factory $tablename.fromEndpoint(Map<String, dynamic> json) { '],
+        padding: Headers.classIndent);
+    generatorIO.add(['var _instance = ${generatorIO.rootFileName}('], padding: Headers.levelIndent(2));
+    generatorIO.add([
+      "${Headers.sqlRowid} : json['${Headers.sqlRowid}'] ?? 0,",
+      "${Headers.parentRowId} : json['${Headers.parentRowId}'] ?? 0,",
+      "${Headers.parentClassName} : json['${Headers.parentClassName}'] ?? '',",
+    ], padding: Headers.levelIndent(3));
+    List<DBRecord> columnRecords = projectBloc.columnsInTable(name: tablename);
+    for (DBRecord record in columnRecords) {
+      final column = ColumnDeclarations(record: record);
+      generatorIO.add(["${column.columnName} : json['${record.json}'],"], padding: Headers.levelIndent(3));
+      if (record.columnType == ColumnTypes.clazz) {
+        toJsonList.add("'${column.columnName}': ${record.json}.toJson(),");
+        continue;
+      }
+      if (record.columnType == ColumnTypes.array) {
+        toJsonList.add("'${column.columnName}': jsonArray<${column.targetName}>(${record.json}),");
+        continue;
+      }
+      toJsonList.add("'${column.columnName}': ${record.json},");
+    }
+    generatorIO.add([');', 'return _instance;'], padding: Headers.levelIndent(2));
+    generatorIO.add(['}'], padding: Headers.classIndent);
+    generatorIO.newSection(name: '///- ToEndpoint', body: ['Map<String, dynamic> toEndpoint() => {'], padding: Headers.classIndent);
     generatorIO.add(["'${Headers.sqlRowid}': ${Headers.sqlRowid} ?? 0,"], padding: Headers.parameterIntent);
     generatorIO.add(["'${Headers.parentRowId}': ${Headers.parentRowId} ?? 0,"], padding: Headers.parameterIntent);
     generatorIO.add(["'${Headers.parentClassName}': ${Headers.parentClassName} ?? '',"], padding: Headers.parameterIntent);

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_db_input_widget/model/db_record.dart';
+import 'package:flutter_strings/flutter_strings.dart' as Strings;
 import 'package:flutter_tracers/trace.dart' as Log;
 
 /// This class holds the information about a given input row, it can be the initial value provided
@@ -134,6 +135,7 @@ class FieldInput {
   /// Target - if data type is array or class then Target is like Field, if not array or class must be empty
   /// Comment - No restrictions
   String validateAt({@required int index}) {
+    if (index == indexTarget && _items[indexTarget].length >= 1) _items[indexTarget] = Strings.capitalize(_items[indexTarget]);
     final text = _items[index] ?? '';
     Log.t('FieldInput - validateAt($index) => $text');
     switch (index) {

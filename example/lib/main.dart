@@ -267,7 +267,7 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
                       title: 'Table',
                       result: (newTableName) {
                         setState(() {
-                          tableName = newTableName;
+                          tableName = newTableName.substring(0, 1).toUpperCase() + newTableName.substring(1);
                           fieldInput.focusOnFirstField(context);
                         });
                       }),

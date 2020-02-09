@@ -56,19 +56,19 @@ class DBRecord with JsonData {
   }
 
   DBRecord.fromJson(Map map)
-      : name = map[_name],
+      : name = Strings.capitalize(map[_name]),
         field = map[_field],
         json = map[_json],
         type = map[_type],
-        target = map[_target],
+        target = Strings.capitalize(map[_target]),
         comment = map[_comment];
 
   Map<String, dynamic> toJson() => {
-        _name: name,
+        _name: Strings.capitalize(name),
         _field: field,
         _json: json,
         _type: type,
-        _target: target,
+        _target: Strings.capitalize(target),
         _comment: comment,
       };
 
