@@ -52,9 +52,17 @@ class ColumnDeclarations {
     }
   }
 
+  String columnCreate() {
+    if (record.columnType == ColumnTypes.array || record.columnType == ColumnTypes.clazz) {
+      return record.name;
+    } else {
+      return null;
+    }
+  }
+
   String columnDispose() {
     if (record.columnType == ColumnTypes.array || record.columnType == ColumnTypes.clazz) {
-      return 'await dispose$columnSetter();';
+      return 'await delete$columnSetter();';
     } else {
       return null;
     }
@@ -86,7 +94,10 @@ class ColumnDeclarations {
     result.add('List<$targetName> _$columnName;${record.trailingComment}');
     result.add('List<$targetName> get $columnName => _$columnName;');
     result.add('void set$columnSetter(List<dynamic> newValue) => _$columnName = $targetName.buildArray(newValue);');
-    result.add('void dispose$columnSetter() => _$columnSetter.forEach((item) => item.dispose());');
+    result.add('void create$columnSetter() => _$columnName?.forEach((item) => item.createRecord());');
+    result.add('void read$columnSetter() => _$columnName?.forEach((item) => item.readRecord());');
+    result.add('void update$columnSetter() => _$columnName?.forEach((item) => item.updateRecord());');
+    result.add('void delete$columnSetter() => _$columnName?.forEach((item) => item.deleteRecord());');
     return result;
   }
 
@@ -104,7 +115,10 @@ class ColumnDeclarations {
     result.add('${record.target} _$columnName;${record.trailingComment}');
     result.add('${record.target} get $columnName => _$columnName;');
     result.add('void set$columnSetter(dynamic newValue) => _$columnName = $targetName.build(newValue);');
-    result.add('void dispose$columnSetter() => _$columnName.dispose();');
+    result.add('void create$columnSetter() => _$columnName.createRecord();');
+    result.add('void read$columnSetter() => _$columnName.readRecord();');
+    result.add('void update$columnSetter() => _$columnName?.updateRecord();');
+    result.add('void delete$columnSetter() => _$columnName?.deleteRecord();');
     return result;
   }
 

@@ -12,13 +12,59 @@ class FactoryDeclarations {
   final DBProjectBloc projectBloc;
   const FactoryDeclarations({@required this.callback, @required this.generatorIO, @required this.projectBloc});
 
-  Future<void> makeFactories() async {
-    await _fromJsonFactory();
-    await _fromJsonCloud();
+  /// Create a Map<String,dynamic> property that can be used to PUT to server/cloud endpoint, this uses
+  /// the 'json' field that was added in the form.
+  Future<void> createInlineCloudMapProperty() {
+    generatorIO.newSection(name: '///- ToCloud', body: ['Map<String, dynamic> toCloud() => {'], padding: Headers.classIndent);
+    List<String> toJsonList = List();
+    final tablename = generatorIO.rootFileName;
+    List<DBRecord> columnRecords = projectBloc.columnsInTable(name: tablename);
+    for (DBRecord record in columnRecords) {
+      final column = ColumnDeclarations(record: record);
+      if (record.columnType == ColumnTypes.clazz) {
+        toJsonList.add("'${record.json}': ${column.columnName}.toJson(),");
+        continue;
+      }
+      if (record.columnType == ColumnTypes.array) {
+        toJsonList.add("'${record.json}': jsonArray<${column.targetName}>(${column.columnName}),");
+        continue;
+      }
+      toJsonList.add("'${record.json}': ${column.columnName},");
+    }
+    generatorIO.add(toJsonList, padding: Headers.parameterIntent);
+    generatorIO.add(['};'], padding: Headers.classIndent);
+    return null;
   }
 
-  Future<void> _fromJsonFactory() async {
+  /// Properties, List<object>, and 'class'-properties to json format (Map<String, dynamic>)
+  Future<void> createInlineMapProperty() {
+    generatorIO.newSection(name: '///- ToJson', body: ['Map<String, dynamic> toJson() => {'], padding: Headers.classIndent);
+    generatorIO.add(["'${Headers.sqlRowid}': ${Headers.sqlRowid} ?? 0,"], padding: Headers.parameterIntent);
+    generatorIO.add(["'${Headers.parentRowId}': ${Headers.parentRowId} ?? 0,"], padding: Headers.parameterIntent);
+    generatorIO.add(["'${Headers.parentClassName}': ${Headers.parentClassName} ?? '',"], padding: Headers.parameterIntent);
     List<String> toJsonList = List();
+    final tablename = generatorIO.rootFileName;
+    List<DBRecord> columnRecords = projectBloc.columnsInTable(name: tablename);
+    for (DBRecord record in columnRecords) {
+      final column = ColumnDeclarations(record: record);
+      if (record.columnType == ColumnTypes.clazz) {
+        toJsonList.add("'${column.columnName}': ${column.columnName}.toJson(),");
+        continue;
+      }
+      if (record.columnType == ColumnTypes.array) {
+        toJsonList.add("'${column.columnName}': jsonArray<${column.targetName}>(${column.columnName}),");
+        continue;
+      }
+      toJsonList.add("'${column.columnName}': ${column.columnName},");
+    }
+    generatorIO.add(toJsonList, padding: Headers.parameterIntent);
+    generatorIO.add(['};'], padding: Headers.classIndent);
+    return null;
+  }
+
+  /// For created a class based on json object (Map<String,dynamic) that includes private properties of parent row id,
+  /// and parent class name. With these extended properties it is possible to save/read/update to the on-device sql-store.
+  Future<void> factoryFromJson() async {
     final tablename = generatorIO.rootFileName;
     generatorIO.newSection(
         name: '///- Factory fromJson',
@@ -34,33 +80,19 @@ class FactoryDeclarations {
     for (DBRecord record in columnRecords) {
       final column = ColumnDeclarations(record: record);
       generatorIO.add(["${column.columnName} : json['${column.columnName}'],"], padding: Headers.levelIndent(3));
-      if (record.columnType == ColumnTypes.clazz) {
-        toJsonList.add("'${column.columnName}': ${column.columnName}.toJson(),");
-        continue;
-      }
-      if (record.columnType == ColumnTypes.array) {
-        toJsonList.add("'${column.columnName}': jsonArray<${column.targetName}>(${column.columnName}),");
-        continue;
-      }
-      toJsonList.add("'${column.columnName}': ${column.columnName},");
     }
     generatorIO.add([');', 'return _instance;'], padding: Headers.levelIndent(2));
     generatorIO.add(['}'], padding: Headers.classIndent);
-    generatorIO.newSection(name: '///- ToJson', body: ['Map<String, dynamic> toJson() => {'], padding: Headers.classIndent);
-    generatorIO.add(["'${Headers.sqlRowid}': ${Headers.sqlRowid} ?? 0,"], padding: Headers.parameterIntent);
-    generatorIO.add(["'${Headers.parentRowId}': ${Headers.parentRowId} ?? 0,"], padding: Headers.parameterIntent);
-    generatorIO.add(["'${Headers.parentClassName}': ${Headers.parentClassName} ?? '',"], padding: Headers.parameterIntent);
-    generatorIO.add(toJsonList, padding: Headers.parameterIntent);
-    generatorIO.add(['};'], padding: Headers.classIndent);
   }
 
-  Future<void> _fromJsonCloud() async {
-    List<String> toJsonList = List();
+  /// Objects from a server (via HTTP-GET) may have key names that do not map to properties within a class (case sensitivity, or
+  /// json object is a another object (aka non-primitive int, double, string , or and array of objects), this factory will
+  /// use the mapping from 'json' to 'field' from the editor to create an object.
+  Future<void> factoryFromJsonCloud() async {
     final tablename = generatorIO.rootFileName;
     generatorIO.newSection(
-        name: '///- CLOUD transfers...................',
+        name: '///- Factory from Cloud',
         body: [
-          '///- Factory from Cloud',
           'factory $tablename.fromCloud(Map<String, dynamic> json) { ',
         ],
         padding: Headers.classIndent);
@@ -69,20 +101,8 @@ class FactoryDeclarations {
     for (DBRecord record in columnRecords) {
       final column = ColumnDeclarations(record: record);
       generatorIO.add(["${column.columnName} : json['${record.json}'],"], padding: Headers.levelIndent(3));
-      if (record.columnType == ColumnTypes.clazz) {
-        toJsonList.add("'${record.json}': ${column.columnName}.toJson(),");
-        continue;
-      }
-      if (record.columnType == ColumnTypes.array) {
-        toJsonList.add("'${record.json}': jsonArray<${column.targetName}>(${column.columnName}),");
-        continue;
-      }
-      toJsonList.add("'${record.json}': ${column.columnName},");
     }
     generatorIO.add([');', 'return _instance;'], padding: Headers.levelIndent(2));
     generatorIO.add(['}'], padding: Headers.classIndent);
-    generatorIO.newSection(name: '///- ToCloud', body: ['Map<String, dynamic> toCloud() => {'], padding: Headers.classIndent);
-    generatorIO.add(toJsonList, padding: Headers.parameterIntent);
-    generatorIO.add(['};', '///- CLOUD'], padding: Headers.classIndent);
   }
 }

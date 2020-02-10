@@ -6,7 +6,9 @@ import 'package:flutter_db_input_widget/generation/factory_declarations.dart';
 import 'package:flutter_db_input_widget/generation/fixed_headers.dart' as Headers;
 import 'package:flutter_db_input_widget/generation/generation_helpers.dart';
 import 'package:flutter_db_input_widget/generation/library_generator.dart';
+import 'package:flutter_db_input_widget/generation/sqlite_crud_operations.dart';
 import 'package:flutter_db_input_widget/generation/sqlite_declarations.dart';
+import 'package:flutter_db_input_widget/generation/sqlite_helpers.dart';
 import 'package:flutter_db_input_widget/io/db_project_io.dart';
 import 'package:flutter_db_input_widget/model/db_record.dart';
 import 'package:flutter_strings/flutter_strings.dart' as Strings;
@@ -50,32 +52,54 @@ class Generator {
   Future<dynamic> _buildTableContent({GeneratorIO generatorIO}) async {
     final tablename = generatorIO.rootFileName;
     try {
+      /// Header at the top of every file with the files creation date
+      /// and all the 'import' statements used by every created file
       generatorIO.add([Headers.tableHeader()]);
+
+      /// If the new classes has any properties that are themselves classes (eg "List<something> items" or "FizzClass other"
+      /// this creates 'import' statement for those target class(es).
       _createImportList(generatorIO: generatorIO);
 
-      /// Add 'import' for any fields that are class or arrays
+      /// Start of class declaration
       generatorIO.add(['class $tablename extends SQL.SQLParse<$tablename>{']);
+
+      /// 'static const String' for each column of the class/record to be used as helpers to avoid
+      /// having code with hard-coded strings
       await _createColumnConstants(generatorIO: generatorIO);
+
+      /// Creates the list of properties/columns with special getters/setter/updaters for properties that are classes or list<>
       await _createColumnDeclarations(generatorIO: generatorIO);
+
+      /// Create the Map properties to get data from json(aka Map<String,dynamic>) and HTTP-GET
+      final factoryDeclarations = FactoryDeclarations(callback: callback, generatorIO: generatorIO, projectBloc: projectBloc);
+      factoryDeclarations.createInlineMapProperty();
+      factoryDeclarations.createInlineCloudMapProperty();
+
+      /// 'static' constructors to handle creation with either an instance of the class or a json object "Map<String,dynamic>"
+      final staticBuilders = Headers.createStaticBuilders(generatorIO.projectName);
+      generatorIO.newSection(name: '///- Static constructors', body: [staticBuilders]);
+
+      /// The class constructor
       await _createConstructor(generatorIO: generatorIO);
       generatorIO.blankLine;
-      final staticBuilders = Headers.createStaticBuilders(generatorIO.projectName);
-      generatorIO.add([staticBuilders]);
-      await FactoryDeclarations(callback: callback, generatorIO: generatorIO, projectBloc: projectBloc).makeFactories();
 
-      final disposalMethod = _createDisposeMethod(tablename: tablename, generatorIO: generatorIO);
-      generatorIO.add([disposalMethod]);
+      /// Create the factory method to be able to create an object from json and json from HTTP-GET
+      factoryDeclarations.factoryFromJson();
+      factoryDeclarations.factoryFromJsonCloud();
+
+      final sqliteCRUD = SQLiteCRUD(callback: callback, generatorIO: generatorIO, projectBloc: projectBloc);
+      sqliteCRUD.createSQLCreate();
+      sqliteCRUD.createSQLRead();
+      sqliteCRUD.createSQLUpdate();
+      sqliteCRUD.createSQLDelete();
 
       final sqLiteDeclarations = SQLiteDeclarations(callback: callback, generatorIO: generatorIO, projectBloc: projectBloc);
       sqLiteDeclarations.createSQLiteTable();
-      generatorIO.newSection(
-          name: '///- Common SQL statements......',
-          body: [Headers.createSQLSelectStatement(tablename)],
-          padding: Headers.classIndent);
+      //// TODO: Has bugs - waiting for use case sqLiteDeclarations.createSQLRestoreClass();
+      sqLiteDeclarations.createSQLSaveClass();
 
-      sqLiteDeclarations.createSQLInsert();
-      sqLiteDeclarations.createSQLRestore();
-      sqLiteDeclarations.createSQLSave();
+      SQLiteHelpers.createSQLCount(generatorIO: generatorIO);
+      SQLiteHelpers.createSQLGetFirstRecord(generatorIO: generatorIO);
 
       generatorIO.add(['}']);
       return null;
@@ -83,19 +107,6 @@ class Generator {
       Log.e('_buildTableContent (error): ${error.toString()}');
       throw FailedToWrite('Failed to create content for "$tablename": ${error.toString()}');
     }
-  }
-
-  Future<void> _createImportList({@required GeneratorIO generatorIO}) async {
-    List<DBRecord> columnRecords = projectBloc.columnsInTable(name: generatorIO.rootFileName);
-    bool first = true;
-    for (DBRecord record in columnRecords) {
-      if (record.columnType == ColumnTypes.array || record.columnType == ColumnTypes.clazz) {
-        if (first) generatorIO.blankLine;
-        first = false;
-        generatorIO.add(["import '..${projectBloc.pathForTable(record.target)}';"]);
-      }
-    }
-    if (!first) generatorIO.blankLine;
   }
 
   /// Generates a list of 'static const String' for each column name, this is used to avoid using quoted strings
@@ -118,7 +129,7 @@ class Generator {
 
   Future<void> _createColumnDeclarations({@required GeneratorIO generatorIO}) async {
     List<DBRecord> columnRecords = projectBloc.columnsInTable(name: generatorIO.rootFileName);
-    generatorIO.newSection(name: '///- Column declarations', padding: Headers.classIndent);
+    generatorIO.newSection(name: '///- Property/Column declarations', padding: Headers.classIndent);
     generatorIO.add([
       'int _${Headers.sqlRowid};   ///+ SQLite column',
       'int get ${Headers.sqlRowid} => _${Headers.sqlRowid} ?? 0;',
@@ -168,18 +179,18 @@ class Generator {
     generatorIO.add(['}'], padding: Headers.classIndent);
   }
 
-  String _createDisposeMethod({@required String tablename, @required GeneratorIO generatorIO}) {
-    GeneratorIO localIO = GeneratorIO(rootFileName: 'fake');
-    localIO.newSection(name: '///- Create dispose/delete method', body: ['void dispose() {'], padding: Headers.classIndent);
-    localIO.add(["await SQL.SqliteController.database.rawDelete('DELETE FROM $tablename WHERE rowid = \$rowid');"],
-        padding: Headers.classIndent + 3);
+  /// The 'import' states of every class referenced as a "LIST<class> stuff" or "{class} otherStuff" by in the class/table
+  Future<void> _createImportList({@required GeneratorIO generatorIO}) async {
     List<DBRecord> columnRecords = projectBloc.columnsInTable(name: generatorIO.rootFileName);
+    bool first = true;
     for (DBRecord record in columnRecords) {
-      String declaration = ColumnDeclarations(record: record).columnDispose();
-      if (declaration != null) localIO.add([declaration], padding: Headers.classIndent + 3);
+      if (record.columnType == ColumnTypes.array || record.columnType == ColumnTypes.clazz) {
+        if (first) generatorIO.blankLine;
+        first = false;
+        generatorIO.add(["import '..${projectBloc.pathForTable(record.target)}';"]);
+      }
     }
-    localIO.add(['}'], padding: Headers.classIndent);
-    return localIO.content;
+    if (!first) generatorIO.blankLine;
   }
 
   /// After the table file has been composed with all the fields, the contents are written to
