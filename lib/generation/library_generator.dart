@@ -50,10 +50,22 @@ class LibraryGenerator {
       }
       final tableNameConstList = _generateTableNameConstString(tableNameList);
       generatorIO.newSection(name: '///- Constants to refer to table name', body: tableNameConstList);
+      _generateListOfTables(projectBloc: projectBloc);
       return generatorIO;
     } catch (error) {
       Log.e('generateLibrary (error): ${error.toString()}');
     }
+  }
+
+  Future<dynamic> _generateListOfTables({@required DBProjectBloc projectBloc}) async {
+    final tableNameList = projectBloc.tableNameList();
+    generatorIO.newSection(name: '///- Helper: Collection of all table names in the project', body: [
+      'final List<String> listOfTables = [',
+    ]);
+    for (String name in tableNameList) {
+      generatorIO.add(["'$name'" + ','], padding: Headers.classIndent);
+    }
+    generatorIO.add(['];']);
   }
 
   /// In the sqlite_{project}_library.g.dart file there are 'const String' values for each table name, this creates

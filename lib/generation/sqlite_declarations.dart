@@ -34,11 +34,15 @@ class SQLiteDeclarations {
     }
     generatorIO.add([previous, ")''';"], padding: Headers.parameterIntent + 3);
     generatorIO.blankLine;
+    generatorIO.add([
+      'if (_createTableIfNeeded) await SQL.SqliteController.database.execute(create);',
+      '_createTableIfNeeded = false;   // Set to prevent future table creates',
+    ], padding: Headers.parameterIntent);
     if (additionalTables.length > 0) {
+      generatorIO.blankLine;
       generatorIO.add(additionalTables, padding: Headers.parameterIntent);
       generatorIO.blankLine;
     }
-    generatorIO.add(['await SQL.SqliteController.database.execute(create);'], padding: Headers.parameterIntent);
     generatorIO.add(['}'], padding: Headers.classIndent);
     return null;
   }
@@ -102,12 +106,12 @@ class SQLiteDeclarations {
       final declaration = ColumnDeclarations(record: record);
       if (record.columnType == ColumnTypes.array) {
         String code = '''
-    for (${declaration.targetName} item in ${declaration.columnName}) {
-       if (item == null) continue;
-       item.setParentRowId(rowid);
-       item.setParentClassName(class${generatorIO.rootFileName});
-       await item.saveToSql();
-    }''';
+     for (${declaration.targetName} item in ${declaration.columnName}) {
+        if (item == null) continue;
+        item.setParentRowId(rowid);
+        item.setParentClassName(class${generatorIO.rootFileName});
+        await item.saveToSql();
+     }''';
         generatorIO.add([code]);
         continue;
       }

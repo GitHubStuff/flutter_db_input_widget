@@ -132,7 +132,9 @@ class Generator {
     List<DBRecord> columnRecords = projectBloc.columnsInTable(name: generatorIO.rootFileName);
     generatorIO.newSection(name: '///- Property/Column declarations', padding: Headers.classIndent);
     generatorIO.add([
-      'int _${Headers.sqlRowid};   ///+ SQLite column',
+      'static bool _createTableIfNeeded = true;    //Safety check to avoid repeatedly creating the ${generatorIO.rootFileName} table',
+      ''
+          'int _${Headers.sqlRowid};   ///+ SQLite column',
       'int get ${Headers.sqlRowid} => _${Headers.sqlRowid} ?? 0;',
       'void set${Strings.capitalize(Headers.sqlRowid)}(int newValue) => _${Headers.sqlRowid} = newValue ?? 0;'
     ], padding: Headers.classIndent);

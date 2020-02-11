@@ -52,7 +52,11 @@ class SQLiteCRUD {
 
     generatorIO.newSection(
         name: '///- SQLite Create Record', body: ['Future<int> createRecord() async {'], padding: Headers.classIndent);
-    generatorIO.add(["final sql = '''INSERT INTO ${generatorIO.rootFileName}", "("], padding: Headers.levelIndent(1));
+    generatorIO.add([
+      'await createTable();',
+      "final sql = '''INSERT INTO ${generatorIO.rootFileName}",
+      "(",
+    ], padding: Headers.levelIndent(1));
     generatorIO.add(keyList, padding: Headers.levelIndent(2));
     generatorIO.add([')', 'VALUES', '('], padding: Headers.levelIndent(1));
     generatorIO.add(valueList, padding: Headers.levelIndent(2));
@@ -72,6 +76,7 @@ class SQLiteCRUD {
   Future<void> createSQLRead() {
     String sql = '''  ///- Return records of sql query
   Future<List<Map<String, dynamic>>> readRecord({String where, String orderBy = 'rowid'}) async {
+    await createTable();
     String sql = 'SELECT rowid,* from ${generatorIO.rootFileName}';
     if (where != null) sql += ' WHERE \$where';
     if (orderBy != null) sql += ' ORDER BY \$orderBy';
@@ -117,10 +122,14 @@ class SQLiteCRUD {
     generatorIO.newSection(
         name: '///- SQLite Update Class (properties, arrays, classes)',
         body: [
-          "Future<int> updateRecord({String where = 'rowid = rowid'}) async {",
+          "Future<int> updateRecord({String where = 'rowid = \$rowid'}) async {",
         ],
         padding: Headers.classIndent);
-    generatorIO.add(["final sql = '''UPDATE ${generatorIO.rootFileName}", "SET"], padding: Headers.levelIndent(1));
+    generatorIO.add([
+      'await createTable();',
+      "final sql = '''UPDATE ${generatorIO.rootFileName}",
+      "SET",
+    ], padding: Headers.levelIndent(1));
     generatorIO.add(keyList, padding: Headers.levelIndent(2));
     generatorIO.add(["WHERE \$where''';"], padding: Headers.levelIndent(1));
     generatorIO.add(['', 'return await SQL.SqliteController.database.rawUpdate(sql);'], padding: Headers.levelIndent(1));
@@ -133,11 +142,14 @@ class SQLiteCRUD {
   Future<void> createSQLDelete() {
     generatorIO.newSection(
         name: '///- Create class delete method (properties, classes, arrays)',
-        body: ['Future<void> deleteRecord() async {'],
+        body: ["Future<int> deleteRecord(String where = \$rowid') async {"],
         padding: Headers.classIndent);
-    generatorIO.add(
-        ["await SQL.SqliteController.database.rawDelete('DELETE FROM ${generatorIO.rootFileName} WHERE rowid = \$rowid');"],
-        padding: Headers.classIndent + 3);
+    generatorIO.add([
+      'await createTable();',
+      "String sql = 'DELETE FROM ${generatorIO.rootFileName}",
+      "if (where != null) sql = '\$sql WHERE \$where';",
+      "return await SQL.SqliteController.database.rawDelete(sql);",
+    ], padding: Headers.classIndent + 3);
     generatorIO.add(['}'], padding: Headers.classIndent);
     return null;
   }
