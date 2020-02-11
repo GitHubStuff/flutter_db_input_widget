@@ -40,7 +40,7 @@ class GeneratorIO extends DBProjectIO {
   }
 
   Future<dynamic> createTableFilePath({DBProjectBloc dbProjectBloc}) async {
-    final libraryPath = 'tables';
+    final libraryPath = dbProjectBloc.filename;
     final tablePath = 'table_$filename';
     final tableFilename = '$filename$fileSuffix';
     try {

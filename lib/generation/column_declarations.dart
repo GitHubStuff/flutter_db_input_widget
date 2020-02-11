@@ -71,7 +71,7 @@ class ColumnDeclarations {
   String _columnType() {
     switch (record.columnType) {
       case ColumnTypes.array:
-        return 'List<$targetName>';
+        return 'List<Map<String,dynamic>>';
       case ColumnTypes.boolean:
         return 'dynamic';
       case ColumnTypes.clazz:
@@ -93,7 +93,7 @@ class ColumnDeclarations {
     List<String> result = List();
     result.add('List<$targetName> _$columnName;${record.trailingComment}');
     result.add('List<$targetName> get $columnName => _$columnName;');
-    result.add('void set$columnSetter(List<dynamic> newValue) => _$columnName = $targetName.buildArray(newValue);');
+    result.add('void set$columnSetter(List<Map<String, dynamic>> newValue) => _$columnName = $targetName.buildArray(newValue);');
     result.add('void create$columnSetter() => _$columnName?.forEach((item) => item.createRecord());');
     result.add('void read$columnSetter() => _$columnName?.forEach((item) => item.readRecord());');
     result.add('void update$columnSetter() => _$columnName?.forEach((item) => item.updateRecord());');

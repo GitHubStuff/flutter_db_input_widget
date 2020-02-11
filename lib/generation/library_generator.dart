@@ -44,7 +44,7 @@ class LibraryGenerator {
           Log.w('Callback stopped code generation');
           throw CallbackStoppedGeneration('generateLibrary: stopped while creating paths', HelperErrors.userStop);
         }
-        final line = "export 'tables${projectBloc.pathForTable(tablename)}';";
+        final line = "export '${projectBloc.filename}${projectBloc.pathForTable(tablename)}';";
         generatorIO.add([line]);
         await Future.delayed(Duration(milliseconds: 100));
       }

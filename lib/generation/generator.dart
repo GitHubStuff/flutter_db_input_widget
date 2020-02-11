@@ -61,7 +61,7 @@ class Generator {
       _createImportList(generatorIO: generatorIO);
 
       /// Start of class declaration
-      generatorIO.add(['class $tablename extends SQL.SQLParse<$tablename>{']);
+      generatorIO.newSection(name: '///- Class declaration', body: ['class $tablename extends SQL.SQLParse<$tablename>{']);
 
       /// 'static const String' for each column of the class/record to be used as helpers to avoid
       /// having code with hard-coded strings
@@ -114,8 +114,9 @@ class Generator {
   Future<void> _createColumnConstants({@required GeneratorIO generatorIO}) async {
     List<DBRecord> columnRecords = projectBloc.columnsInTable(name: generatorIO.rootFileName);
     generatorIO.newSection(
-        name: '/// Column keys',
+        name: '/// Class and Column keys',
         body: [
+          "static const String class${generatorIO.rootFileName} = '${generatorIO.rootFileName}';",
           "static const String column${Strings.capitalize(Headers.sqlRowid)} = '${Headers.sqlRowid}';",
           "static const String column${Strings.capitalize(Headers.parentRowId)} = '${Headers.parentRowId}';",
         ],

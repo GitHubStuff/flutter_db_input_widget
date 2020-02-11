@@ -59,8 +59,9 @@ class SQLiteCRUD {
     generatorIO.add([
       ")''';",
       '',
-      'rowid = await SQL.SqliteController.database.rawInsert(sql);',
-      'return rowid;',
+      'int newRowid = await SQL.SqliteController.database.rawInsert(sql);',
+      'setRowid(newRowid);'
+          'return rowid;',
     ], padding: Headers.levelIndent(1));
     generatorIO.add(['}'], padding: Headers.classIndent);
     callback('sqlite_declarations: completed sqlite insert');

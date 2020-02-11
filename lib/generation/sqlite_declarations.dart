@@ -18,7 +18,7 @@ class SQLiteDeclarations {
     generatorIO.newSection(name: '///- SQLite Create Table', padding: Headers.classIndent);
     generatorIO.add(['static Future<dynamic> createTable() async {'], padding: Headers.classIndent);
     generatorIO
-        .add(["final create = '''CREATE TABLE IF NOT EXISTS ${generatorIO.rootFileName} {"], padding: Headers.parameterIntent);
+        .add(["final create = '''CREATE TABLE IF NOT EXISTS ${generatorIO.rootFileName} ("], padding: Headers.parameterIntent);
     String firstRow = '${Headers.parentRowId} INTEGER DEFAULT 0,';
     generatorIO.add([firstRow], padding: Headers.parameterIntent + 3);
     String previous = "${Headers.parentClassName} TEXT DEFAULT ''";
@@ -92,11 +92,11 @@ class SQLiteDeclarations {
 
   Future<void> createSQLSaveClass() async {
     generatorIO.newSection(
-      name: '///- SQLite save class (properties, arrays, classes)',
+      name: '///- SQLite saveToSql class (properties, arrays, classes)',
       body: ['Future<void> saveToSql() async {'],
       padding: Headers.classIndent,
     );
-    generatorIO.add(['rowid = await createRecord();'], padding: Headers.levelIndent(1));
+    generatorIO.add(['int newRowId = await createRecord();', 'setRowid(newRowId);'], padding: Headers.levelIndent(1));
     List<DBRecord> columnRecords = projectBloc.columnsInTable(name: generatorIO.rootFileName);
     for (DBRecord record in columnRecords) {
       final declaration = ColumnDeclarations(record: record);
@@ -105,7 +105,7 @@ class SQLiteDeclarations {
     for (${declaration.targetName} item in ${declaration.columnName}) {
        if (item == null) continue;
        item.setParentRowId(rowid);
-       item.setParentClassName(${Headers.parentClassName});
+       item.setParentClassName(class${generatorIO.rootFileName});
        await item.saveToSql();
     }''';
         generatorIO.add([code]);
@@ -115,7 +115,7 @@ class SQLiteDeclarations {
         String code = '''
     if (${declaration.columnName} != null) {
       ${declaration.columnName}.setParentRowId(rowid);
-      ${declaration.columnName}.setParentClassName(parentClassName);
+      ${declaration.columnName}.setParentClassName(class${generatorIO.rootFileName});
       await ${declaration.columnName}.saveToSql();
     }
     ''';

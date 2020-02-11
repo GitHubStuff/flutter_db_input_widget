@@ -3,7 +3,7 @@ import 'package:intl/intl.dart' as INTL;
 const String _fileHeader = '''/// AUTO-GENERATED CODE - DO NOT MODIFY IF POSSIBLE
 /// Created: [DATE]
 
-import 'package:flutter/material.dart';
+//import 'package:flutter/material.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:flutter_sqlite_controller/flutter_sqlite_controller.dart' as SQL;
 //import 'package:flutter_tracers/trace.dart' as Log;''';
@@ -32,14 +32,22 @@ String createStaticBuilders(String classname) {
     throw Exception('static ${classname}Build could not parse: \${data.toString()}');
   }
   
+  ///- buildArray
   static List<$classname> buildArray(List<dynamic> array) {
     List<$classname> result = List();
-    for (dynamic item in array) {
-       if (item == null) result.add(null);
-       if (item is $classname) result.add(item);
-       if (item is Map) result.add($classname.fromJson(item));
+    if (array is List<Map<String,dynamic>>) {
+      for (Map<String,dynamic> item in array) {
+         result.add($classname.fromJson(item));
+      }
+      return result;
     }
-    return result;
+    if (array is List<$classname>) {
+      for ($classname item in array) {
+         result.add(item);
+      }
+      return result;
+    }
+    throw Exception('Unknown datatype \$array');
   }
 ''';
   return code;

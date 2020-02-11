@@ -79,7 +79,15 @@ class FactoryDeclarations {
     List<DBRecord> columnRecords = projectBloc.columnsInTable(name: tablename);
     for (DBRecord record in columnRecords) {
       final column = ColumnDeclarations(record: record);
-      generatorIO.add(["${column.columnName} : json['${column.columnName}'],"], padding: Headers.levelIndent(3));
+      if (record.columnType == ColumnTypes.array) {
+        generatorIO.add([
+          "${column.columnName} : json['${column.columnName}'].cast<Map<String,dynamic>>(),",
+        ], padding: Headers.levelIndent(3));
+      } else {
+        generatorIO.add([
+          "${column.columnName} : json['${column.columnName}'],",
+        ], padding: Headers.levelIndent(3));
+      }
     }
     generatorIO.add([');', 'return _instance;'], padding: Headers.levelIndent(2));
     generatorIO.add(['}'], padding: Headers.classIndent);
