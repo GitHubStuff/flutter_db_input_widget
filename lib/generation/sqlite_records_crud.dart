@@ -7,11 +7,11 @@ import '../flutter_db_input_widget.dart';
 import 'column_declarations.dart';
 import 'generator.dart';
 
-class SQLiteCRUD {
+class SQLiteRecordsCRUD {
   final Callback callback;
   final GeneratorIO generatorIO;
   final DBProjectBloc projectBloc;
-  SQLiteCRUD({this.callback, this.generatorIO, this.projectBloc});
+  SQLiteRecordsCRUD({this.callback, this.generatorIO, this.projectBloc});
 
   /// Create(RUD)
   Future<dynamic> createSQLCreate() async {
@@ -50,8 +50,8 @@ class SQLiteCRUD {
     keyList.add(previousKey);
     valueList.add(previousValue);
 
-    generatorIO.newSection(
-        name: '///- SQLite Create Record', body: ['Future<int> createRecord() async {'], padding: Headers.classIndent);
+    generatorIO.newSection(name: '///- SQL C.R.U.D.', body: ['///- SQL Create']);
+    generatorIO.add(['Future<int> createRecord() async {'], padding: Headers.classIndent);
     generatorIO.add([
       'await createTable();',
       "final sql = '''INSERT INTO ${generatorIO.rootFileName}",
@@ -86,7 +86,8 @@ class SQLiteCRUD {
     return results;
   }
 ''';
-    generatorIO.newSection(name: '///- SQL READ', body: [sql]);
+    generatorIO.newSection(name: '///- SQL C.R.U.D.', body: ['///- SQL READ']);
+    generatorIO.add([sql]);
     return null;
   }
 
@@ -122,12 +123,13 @@ class SQLiteCRUD {
     generatorIO.newSection(
         name: '///- SQLite Update Class (properties, arrays, classes)',
         body: [
-          "Future<int> updateRecord({String where = 'rowid = \$rowid'}) async {",
+          "Future<int> updateRecord({String where}) async {",
         ],
         padding: Headers.classIndent);
     generatorIO.add([
       'await createTable();',
-      "final sql = '''UPDATE ${generatorIO.rootFileName}",
+      "if (where == null) where = 'rowid == \$rowid;",
+      "final sql = '''UPDATE ${generatorIO.rootFileName} ",
       "SET",
     ], padding: Headers.levelIndent(1));
     generatorIO.add(keyList, padding: Headers.levelIndent(2));
@@ -141,16 +143,17 @@ class SQLiteCRUD {
   /// CRU(Delete)
   Future<void> createSQLDelete() {
     generatorIO.newSection(
-        name: '///- Create class delete method (properties, classes, arrays)',
-        body: ["Future<int> deleteRecord(String where = \$rowid') async {"],
+        name: "///- SQL C.R.U.D.', body: ['///- SQL Delete']",
+        body: ["Future<int> deleteRecord({String where}) async {"],
         padding: Headers.classIndent);
     generatorIO.add([
       'await createTable();',
-      "String sql = 'DELETE FROM ${generatorIO.rootFileName}",
+      "if (where == null) where = 'rowid == \$rowid;",
+      "String sql = 'DELETE FROM ${generatorIO.rootFileName}' ",
       "if (where != null) sql = '\$sql WHERE \$where';",
       "return await SQL.SqliteController.database.rawDelete(sql);",
     ], padding: Headers.classIndent + 3);
-    generatorIO.add(['}'], padding: Headers.classIndent);
+    generatorIO.add(['}', '///** end C.R.U.D.'], padding: Headers.classIndent);
     return null;
   }
 }

@@ -93,40 +93,4 @@ class SQLiteDeclarations {
     if (!first) generatorIO.add(['}'], padding: Headers.levelIndent(2));
     generatorIO.add(['    return result;', '}'], padding: Headers.classIndent);
   }
-
-  Future<void> createSQLSaveClass() async {
-    generatorIO.newSection(
-      name: '///- SQLite saveToSql class (properties, arrays, classes)',
-      body: ['Future<void> saveToSql() async {'],
-      padding: Headers.classIndent,
-    );
-    generatorIO.add(['int newRowId = await createRecord();', 'setRowid(newRowId);'], padding: Headers.levelIndent(1));
-    List<DBRecord> columnRecords = projectBloc.columnsInTable(name: generatorIO.rootFileName);
-    for (DBRecord record in columnRecords) {
-      final declaration = ColumnDeclarations(record: record);
-      if (record.columnType == ColumnTypes.array) {
-        String code = '''
-     for (${declaration.targetName} item in ${declaration.columnName}) {
-        if (item == null) continue;
-        item.setParentRowId(rowid);
-        item.setParentClassName(class${generatorIO.rootFileName});
-        await item.saveToSql();
-     }''';
-        generatorIO.add([code]);
-        continue;
-      }
-      if (record.columnType == ColumnTypes.clazz) {
-        String code = '''
-    if (${declaration.columnName} != null) {
-      ${declaration.columnName}.setParentRowId(rowid);
-      ${declaration.columnName}.setParentClassName(class${generatorIO.rootFileName});
-      await ${declaration.columnName}.saveToSql();
-    }
-    ''';
-        generatorIO.blankLine;
-        generatorIO.add([code]);
-      }
-    }
-    generatorIO.add(['}\n'], padding: Headers.classIndent);
-  }
 }

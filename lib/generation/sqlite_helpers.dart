@@ -5,7 +5,7 @@ import 'package:flutter_db_input_widget/io/db_project_io.dart';
 class SQLiteHelpers {
   static Future<void> createSQLCount({@required GeneratorIO generatorIO}) {
     final sql = '''
-  ///- Return count of records in ${generatorIO.rootFileName}
+///- Return count of records in ${generatorIO.rootFileName}
   Future<int> count(String clause) async {
     await createTable();
     final whereClause = (clause == null) ? '' : 'WHERE \$clause';
