@@ -7,11 +7,11 @@ import '../flutter_db_input_widget.dart';
 import 'column_declarations.dart';
 import 'generator.dart';
 
-class SQLiteRecordsCRUD {
+class SQLiteCRUD {
   final Callback callback;
   final GeneratorIO generatorIO;
   final DBProjectBloc projectBloc;
-  SQLiteRecordsCRUD({this.callback, this.generatorIO, this.projectBloc});
+  SQLiteCRUD({this.callback, this.generatorIO, this.projectBloc});
 
   /// Create(RUD)
   Future<dynamic> createSQLCreate() async {
@@ -50,8 +50,8 @@ class SQLiteRecordsCRUD {
     keyList.add(previousKey);
     valueList.add(previousValue);
 
-    generatorIO.newSection(name: '///- SQL C.R.U.D.', body: ['///- SQL Create']);
-    generatorIO.add(['Future<int> createRecord() async {'], padding: Headers.classIndent);
+    generatorIO.newSection(
+        name: '///- SQLite Create Record', body: ['Future<int> createRecord() async {'], padding: Headers.classIndent);
     generatorIO.add([
       'await createTable();',
       "final sql = '''INSERT INTO ${generatorIO.rootFileName}",
@@ -75,24 +75,28 @@ class SQLiteRecordsCRUD {
   /// C(Read)UD
   Future<void> createSQLRead() {
     String sql = '''  ///- Return records of sql query
-  Future<List<Map<String, dynamic>>> readRecord({String where, String orderBy = 'rowid'}) async {
+  static Future<List<${generatorIO.rootFileName}>> readPartialRecord({String where, String orderBy = 'rowid'}) async {
     await createTable();
     String sql = 'SELECT rowid,* from ${generatorIO.rootFileName}';
     if (where != null) sql += ' WHERE \$where';
     if (orderBy != null) sql += ' ORDER BY \$orderBy';
-    var results = await SQL.SqliteController.database.rawQuery(sql).catchError((error, stack) {
+    List<Map<String,dynamic>> databaseMaps = await SQL.SqliteController.database.rawQuery(sql).catchError((error, stack) {
        throw Exception(error.toString());
     });
+    List<${generatorIO.rootFileName}> results = List();
+    for (Map<String,dynamic> item in databaseMaps) {
+       final ${generatorIO.rootFileName} partialRecord = ${generatorIO.rootFileName}.fromJson(item);
+       results.add(partialRecord);
+    }  
     return results;
-  }
-''';
-    generatorIO.newSection(name: '///- SQL C.R.U.D.', body: ['///- SQL READ']);
-    generatorIO.add([sql]);
+  }''';
+    generatorIO.newSection(name: '///- SQL PARTIAL READ', body: [sql]);
     return null;
   }
 
   /// CR(Update)D
   Future<dynamic> createSQLUpdate() async {
+    return null;
     List<DBRecord> columnRecords = projectBloc.columnsInTable(name: generatorIO.rootFileName);
     List<String> keyList = List();
     keyList.add('${Headers.parentRowId} = \$${Headers.parentRowId},');
@@ -123,13 +127,12 @@ class SQLiteRecordsCRUD {
     generatorIO.newSection(
         name: '///- SQLite Update Class (properties, arrays, classes)',
         body: [
-          "Future<int> updateRecord({String where}) async {",
+          "Future<int> updateRecord({String where = 'rowid = \$rowid'}) async {",
         ],
         padding: Headers.classIndent);
     generatorIO.add([
       'await createTable();',
-      "if (where == null) where = 'rowid == \$rowid;",
-      "final sql = '''UPDATE ${generatorIO.rootFileName} ",
+      "final sql = '''UPDATE ${generatorIO.rootFileName}",
       "SET",
     ], padding: Headers.levelIndent(1));
     generatorIO.add(keyList, padding: Headers.levelIndent(2));
@@ -142,18 +145,18 @@ class SQLiteRecordsCRUD {
 
   /// CRU(Delete)
   Future<void> createSQLDelete() {
+    return null;
     generatorIO.newSection(
-        name: "///- SQL C.R.U.D.', body: ['///- SQL Delete']",
-        body: ["Future<int> deleteRecord({String where}) async {"],
+        name: '///- Create class delete method (properties, classes, arrays)',
+        body: ["Future<int> deleteRecord(String where = \$rowid') async {"],
         padding: Headers.classIndent);
     generatorIO.add([
       'await createTable();',
-      "if (where == null) where = 'rowid == \$rowid;",
-      "String sql = 'DELETE FROM ${generatorIO.rootFileName}' ",
+      "String sql = 'DELETE FROM ${generatorIO.rootFileName}",
       "if (where != null) sql = '\$sql WHERE \$where';",
       "return await SQL.SqliteController.database.rawDelete(sql);",
     ], padding: Headers.classIndent + 3);
-    generatorIO.add(['}', '///** end C.R.U.D.'], padding: Headers.classIndent);
+    generatorIO.add(['}'], padding: Headers.classIndent);
     return null;
   }
 }

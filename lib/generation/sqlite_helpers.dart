@@ -18,10 +18,10 @@ class SQLiteHelpers {
 
   static Future<void> createSQLGetFirstRecord({@required GeneratorIO generatorIO}) {
     final sql = '''///- Return first record of sql query
-  Future<Map<String, dynamic>> firstRecord({String where, String orderBy = 'rowid asc limit 1'}) async {
+  Future<${generatorIO.rootFileName}> firstRecord({String where, String orderBy = 'rowid asc limit 1'}) async {
     await createTable();
     if (orderBy == null) throw Exception('static first - orderBy string null');
-    List<Map<String, dynamic>> results = await readRecord(where: where, orderBy: orderBy);
+    List<${generatorIO.rootFileName}> results = await readObject(where: where, orderBy: orderBy);
     return (results != null && results.length > 0) ? results[0] : null;
   }''';
     generatorIO.newSection(name: '///- SQL First record of query', body: [sql], padding: Headers.classIndent);

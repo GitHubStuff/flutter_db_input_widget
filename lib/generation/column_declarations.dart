@@ -94,10 +94,10 @@ class ColumnDeclarations {
     result.add('List<$targetName> _$columnName;${record.trailingComment}');
     result.add('List<$targetName> get $columnName => _$columnName;');
     result.add('void set$columnSetter(List<Map<String, dynamic>> newValue) => _$columnName = $targetName.buildArray(newValue);');
-    result.add('void create$columnSetter() => _$columnName?.forEach((item) => item.createRecord());');
-    result.add('void read$columnSetter() => _$columnName?.forEach((item) => item.readRecord());');
-    result.add('void update$columnSetter() => _$columnName?.forEach((item) => item.updateRecord());');
-    result.add('void delete$columnSetter() => _$columnName?.forEach((item) => item.deleteRecord());');
+    //result.add('void create$columnSetter() => _$columnName?.forEach((item) => item.createRecord());');
+    //result.add('void read$columnSetter() => _$columnName?.forEach((item) => item.readRecord());');
+    //result.add('void update$columnSetter() => _$columnName?.forEach((item) => item.updateRecord());');
+    //result.add('void delete$columnSetter() => _$columnName?.forEach((item) => item.deleteRecord());');
     return result;
   }
 
@@ -115,10 +115,10 @@ class ColumnDeclarations {
     result.add('${record.target} _$columnName;${record.trailingComment}');
     result.add('${record.target} get $columnName => _$columnName;');
     result.add('void set$columnSetter(dynamic newValue) => _$columnName = $targetName.build(newValue);');
-    result.add('void create$columnSetter() => _$columnName.createRecord();');
-    result.add('void read$columnSetter() => _$columnName.readRecord();');
-    result.add('void update$columnSetter() => _$columnName?.updateRecord();');
-    result.add('void delete$columnSetter() => _$columnName?.deleteRecord();');
+    //result.add('void create$columnSetter() => _$columnName.createRecord();');
+    //result.add('void read$columnSetter() => _$columnName.readRecord();');
+    //result.add('void update$columnSetter() => _$columnName?.updateRecord();');
+    //result.add('void delete$columnSetter() => _$columnName?.deleteRecord();');
     return result;
   }
 
