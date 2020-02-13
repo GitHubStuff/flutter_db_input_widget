@@ -80,7 +80,7 @@ class FactoryDeclarations {
       final column = ColumnDeclarations(record: record);
       if (record.columnType == ColumnTypes.array) {
         generatorIO.add([
-          "${column.columnName} : json['${column.columnName}'].cast<Map<String,dynamic>>(),",
+          "${column.columnName} : json['${column.columnName}']?.cast<Map<String,dynamic>>(),",
         ], padding: Headers.levelIndent(3));
       } else {
         generatorIO.add([

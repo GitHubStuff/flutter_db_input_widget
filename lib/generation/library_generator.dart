@@ -38,7 +38,13 @@ class LibraryGenerator {
     try {
       final content = 'library ${projectBloc.asLibraryRootName};';
       final tableNameList = projectBloc.tableNameList();
-      generatorIO.add([Headers.libraryHeader(), content, '']);
+      generatorIO.add([
+        Headers.libraryHeader(),
+        content,
+      ]);
+      generatorIO.blankLine;
+      generatorIO.add(["import 'package:flutter_theme_package/flutter_theme_package.dart';"]);
+      generatorIO.blankLine;
       for (String tablename in tableNameList) {
         if (!callback('Created path for ${projectBloc.pathForTable(tablename)}')) {
           Log.w('Callback stopped code generation');
@@ -51,10 +57,25 @@ class LibraryGenerator {
       final tableNameConstList = _generateTableNameConstString(tableNameList);
       generatorIO.newSection(name: '///- Constants to refer to table name', body: tableNameConstList);
       _generateListOfTables(projectBloc: projectBloc);
+      _generateListOfExceptions();
       return generatorIO;
     } catch (error) {
       Log.e('generateLibrary (error): ${error.toString()}');
     }
+  }
+
+  void _generateListOfExceptions() {
+    final sql = '''
+    
+class BadLinkException extends ApiException {
+  BadLinkException([message, int code]) : super(message, 'Bad SQLiteLink', code);
+}
+
+class SQLiteRecordNotFoundException extends ApiException {
+  SQLiteRecordNotFoundException([message, int code]) : super(message, 'Record not found', code);
+} 
+    ''';
+    generatorIO.add([sql]);
   }
 
   Future<dynamic> _generateListOfTables({@required DBProjectBloc projectBloc}) async {

@@ -17,6 +17,7 @@ class SqliteCRUDLinks {
         body: ['Future<SQL.SQLiteLink> createLink({SQL.SQLiteLink sqlLink}) async {'],
         padding: Headers.classIndent);
     generatorIO.add([
+      "sqlLink ??= SQL.SQLiteLink(tableName: '${generatorIO.rootFileName}');",
       'this.rowid = await create(link: sqlLink);',
       'final childLink = SQL.SQLiteLink(rowid:this.rowid, tableName: className);',
     ], padding: Headers.classIndent + 3);
@@ -29,24 +30,28 @@ class SqliteCRUDLinks {
         generatorIO.blankLine;
       }
       if (record.columnType == ColumnTypes.clazz) {
-        generatorIO.add(['${record.field}.createLink(sqlLink: childLink);'], padding: Headers.classIndent + 3);
+        generatorIO.add(['await ${record.field}.createLink(sqlLink: childLink);'], padding: Headers.classIndent + 3);
         generatorIO.blankLine;
       }
     }
-    generatorIO.add(['return childLink;  //- Useful when creating root/base object'], padding: Headers.classIndent + 3);
+    generatorIO.add(['return childLink;  //- Returning link to root/base object (aka "key" for future use)'],
+        padding: Headers.classIndent + 3);
     generatorIO.add(['}'], padding: Headers.classIndent);
 
     return null;
   }
 
   ///-------------------------------------------------------------------------------------------------------------------
+
   Future<dynamic> sqlRead() async {
     generatorIO.newSection(
         name: '///- SQLRead Read all linked records',
-        body: ['static Future<List<${generatorIO.rootFileName}>> readLink({SQL.SQLiteLink sqlLink}) async {'],
+        body: ['static Future<List<${generatorIO.rootFileName}>> readLink({SQL.SQLiteLink sqlLink, String whereClause}) async {'],
         padding: Headers.classIndent);
     generatorIO.add([
-      'List<${generatorIO.rootFileName}> list = await read(link: sqlLink);',
+      'if (sqlLink == null && whereClause == null) return null;',
+      "final where = (sqlLink.tableName == '${generatorIO.rootFileName}') ? '(rowid = \${sqlLink.rowid})' : sqlLink.clause;",
+      'List<${generatorIO.rootFileName}> list = await read(whereClause: where);',
     ], padding: Headers.classIndent + 3);
     List<DBRecord> columnRecords = projectBloc.columnsInTable(name: generatorIO.rootFileName);
     bool usingLink = false;
@@ -79,6 +84,22 @@ class SqliteCRUDLinks {
     generatorIO.add(['return list;'], padding: Headers.classIndent + 3);
     generatorIO.add(['}'], padding: Headers.classIndent);
     return null;
+  }
+
+  ///*** SPECIAL HELPER METHOD;
+  Future<dynamic> sqlReadRoot() async {
+    generatorIO.newSection(
+        name: '///- SQLReadRoot Read all linked records based on root-key',
+        body: ['static Future<${generatorIO.rootFileName}> readRoot({SQL.SQLiteLink sqlLink}) async {'],
+        padding: Headers.classIndent);
+    generatorIO.add([
+      "assert(sqlLink != null);",
+      "String clause = '(rowid = \${sqlLink.rowid})';",
+      "List<${generatorIO.rootFileName}> list = await readLink(whereClause: clause);",
+      "if (list == null || list.length != 1) throw SQLiteRecordNotFoundException('Cannot find record: \$clause', 400);",
+      "return list[0];"
+    ], padding: Headers.classIndent + 3);
+    generatorIO.add(['}'], padding: Headers.classIndent);
   }
 
   ///-------------------------------------------------------------------------------------------------------------------
@@ -116,6 +137,7 @@ class SqliteCRUDLinks {
     return null;
   }
 
+  ///-------------------------------------------------------------------------------------------------------------------
   Future<dynamic> sqlDelete() async {
     generatorIO.newSection(
         name: '///- SQLDelete delete all linked records',

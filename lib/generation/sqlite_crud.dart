@@ -90,6 +90,7 @@ class SQLiteCRUD {
     List<${generatorIO.rootFileName}> results = List();
     for (Map<String,dynamic> map in maps) {
        final result = ${generatorIO.rootFileName}.fromJson(map);
+       result.rowid = map['rowid'];
        results.add(result);
     }  
     return results;

@@ -88,20 +88,23 @@ class Generator {
       factoryDeclarations.factoryFromJson();
       factoryDeclarations.factoryFromJsonCloud();
 
-      generatorIO.add(['//- **************** BEGIN Sqlite C.R.U.D.  {Create, Read, Update, Delete}'], padding: Headers.classIndent);
+      generatorIO
+          .add(['///- **************** BEGIN Sqlite C.R.U.D.  {Create, Read, Update, Delete}'], padding: Headers.classIndent);
       final sqliteCRUD = SQLiteCRUD(callback: callback, generatorIO: generatorIO, projectBloc: projectBloc);
       sqliteCRUD.createSQLCreate();
       sqliteCRUD.createSQLRead();
       sqliteCRUD.createSQLUpdate();
       sqliteCRUD.createSQLDelete();
-      generatorIO.add(['//- **************** END Sqlite C.R.U.D.  {Create, Read, Update, Delete}'], padding: Headers.classIndent);
+      generatorIO.add(['///- **************** END Sqlite C.R.U.D.  {Create, Read, Update, Delete}'], padding: Headers.classIndent);
 
-      generatorIO.add(['///- **************** BEGINS Sqlite C.R.U.D. for linked records']);
+      generatorIO.add(['///- **************** BEGINS Sqlite C.R.U.D. for linked records'], padding: Headers.classIndent);
       final sqliteCRUDLinks = SqliteCRUDLinks(callback: callback, generatorIO: generatorIO, projectBloc: projectBloc);
       sqliteCRUDLinks.sqlCreate();
       sqliteCRUDLinks.sqlRead();
+      sqliteCRUDLinks.sqlReadRoot();
       sqliteCRUDLinks.sqlUpdate();
       sqliteCRUDLinks.sqlDelete();
+      generatorIO.add(['///- **************** END Sqlite C.R.U.D. for linked records'], padding: Headers.classIndent);
 //      final objectCRUD = ObjectCRUD(callback: callback, generatorIO: generatorIO, projectBloc: projectBloc);
 //      objectCRUD.createMethod();
 //      objectCRUD.readObjectMethod();

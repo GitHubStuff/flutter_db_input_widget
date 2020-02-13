@@ -3,10 +3,9 @@ import 'package:intl/intl.dart' as INTL;
 const String _fileHeader = '''/// AUTO-GENERATED CODE - DO NOT MODIFY IF POSSIBLE
 /// Created: [DATE]
 
-//import 'package:flutter/material.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:flutter_sqlite_controller/flutter_sqlite_controller.dart' as SQL;
-//import 'package:flutter_tracers/trace.dart' as Log;''';
+import '../../product_test.g.dart';''';
 
 String libraryHeader() {
   final heading = '''/// AUTO-GENERATED CODE - DO NOT MODIFY IF POSSIBLE
@@ -35,6 +34,7 @@ String createStaticBuilders(String classname) {
   ///- buildArray
   static List<$classname> buildArray(List<dynamic> array) {
     List<$classname> result = List();
+    if (array == null) return result;
     if (array is List<Map<String,dynamic>>) {
       for (Map<String,dynamic> item in array) {
          result.add($classname.fromJson(item));
