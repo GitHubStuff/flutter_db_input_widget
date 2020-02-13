@@ -67,6 +67,6 @@ const int trailingComment = 5;
 const String parentRowId = 'parentRowId';
 const String parentClassName = 'parentClassName';
 const String sqlRowid = 'rowid';
-const String suffix = '.g.dart';
+const String suffix = '.g.txt';
 
 int levelIndent(int level) => (classIndent + 2 * level);

@@ -19,9 +19,9 @@ class SQLiteCRUD {
     List<String> keyList = List();
     List<String> valueList = List();
     keyList.add('${Headers.parentRowId},');
-    valueList.add('\$_${Headers.parentRowId},');
+    valueList.add('\$link.rowid,');
     String previousKey = '${Headers.parentClassName}';
-    String previousValue = '"\$_${Headers.parentClassName}"';
+    String previousValue = '"\$link.tableName"';
     for (DBRecord record in columnRecords) {
       final declaration = ColumnDeclarations(record: record);
       if (record.columnType == ColumnTypes.array || record.columnType == ColumnTypes.clazz) continue;
@@ -51,10 +51,10 @@ class SQLiteCRUD {
     valueList.add(previousValue);
 
     generatorIO.newSection(
-        name: '///- SQLite Create Record', body: ['Future<int> createRecord() async {'], padding: Headers.classIndent);
+        name: '///- SQLite Create Record', body: ['Future<int> create(SQLiteLink link) async {'], padding: Headers.classIndent);
     generatorIO.add([
       'await createTable();',
-      "final sql = '''INSERT INTO ${generatorIO.rootFileName}",
+      "final sql = '''INSERT INTO ${generatorIO.tableName}",
       "(",
     ], padding: Headers.levelIndent(1));
     generatorIO.add(keyList, padding: Headers.levelIndent(2));
@@ -64,8 +64,8 @@ class SQLiteCRUD {
       ")''';",
       '',
       'int newRowid = await SQL.SqliteController.database.rawInsert(sql);',
-      'setRowid(newRowid);'
-          'return rowid;',
+      'this.rowid = newRowid;',
+      'return this.rowid;',
     ], padding: Headers.levelIndent(1));
     generatorIO.add(['}'], padding: Headers.classIndent);
     callback('sqlite_declarations: completed sqlite insert');

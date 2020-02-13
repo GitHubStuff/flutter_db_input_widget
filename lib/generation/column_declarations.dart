@@ -28,7 +28,7 @@ class ColumnDeclarations {
   String get columnName => Strings.lowercase(record.field);
   String get columnSetter => Strings.capitalize(record.field);
   String get constructorParameter => '${_columnType()} $columnName,';
-  String get constructorParameterAssignment => 'set$columnSetter($columnName);';
+  String get constructorParameterAssignment => 'this.$columnName = $columnName;';
   String get targetName => Strings.capitalize(record.target);
 
   List<String> columnDeclaration() {
@@ -93,11 +93,7 @@ class ColumnDeclarations {
     List<String> result = List();
     result.add('List<$targetName> _$columnName;${record.trailingComment}');
     result.add('List<$targetName> get $columnName => _$columnName;');
-    result.add('void set$columnSetter(List<Map<String, dynamic>> newValue) => _$columnName = $targetName.buildArray(newValue);');
-    //result.add('void create$columnSetter() => _$columnName?.forEach((item) => item.createRecord());');
-    //result.add('void read$columnSetter() => _$columnName?.forEach((item) => item.readRecord());');
-    //result.add('void update$columnSetter() => _$columnName?.forEach((item) => item.updateRecord());');
-    //result.add('void delete$columnSetter() => _$columnName?.forEach((item) => item.deleteRecord());');
+    result.add('set $columnName(List<Map<String, dynamic>> newValue) => _$columnName = $targetName.buildArray(newValue);');
     return result;
   }
 
@@ -105,8 +101,7 @@ class ColumnDeclarations {
     List<String> result = List();
     result.add('int _$columnName;${record.trailingComment}');
     result.add('bool get $columnName => (_$columnName == null) ? null : (_$columnName == 1);');
-    result.add(
-        'void set$columnSetter(dynamic newValue) => _$columnName = (newValue == null) ? null : SQL.getBoolean(newValue) ? 1 : 0;');
+    result.add('set $columnName(dynamic newValue) => _$columnName = SQL.getBoolean(newValue) ? 1 : 0;');
     return result;
   }
 
@@ -114,11 +109,7 @@ class ColumnDeclarations {
     List<String> result = List();
     result.add('${record.target} _$columnName;${record.trailingComment}');
     result.add('${record.target} get $columnName => _$columnName;');
-    result.add('void set$columnSetter(dynamic newValue) => _$columnName = $targetName.build(newValue);');
-    //result.add('void create$columnSetter() => _$columnName.createRecord();');
-    //result.add('void read$columnSetter() => _$columnName.readRecord();');
-    //result.add('void update$columnSetter() => _$columnName?.updateRecord();');
-    //result.add('void delete$columnSetter() => _$columnName?.deleteRecord();');
+    result.add('set $columnName(dynamic newValue) => _$columnName = $targetName.build(newValue);');
     return result;
   }
 
@@ -126,7 +117,7 @@ class ColumnDeclarations {
     List<String> result = List();
     result.add('String _$columnName;${record.trailingComment}');
     result.add('DateTime get $columnName => SQL.getDateTime(_$columnName);');
-    result.add('void set$columnSetter(dynamic newValue) => _$columnName = SQL.dateString(newValue);');
+    result.add('void set $columnName(dynamic newValue) => _$columnName = SQL.dateString(newValue);');
     return result;
   }
 
@@ -135,7 +126,7 @@ class ColumnDeclarations {
     List<String> result = List();
     result.add('$type _$columnName;${record.trailingComment}');
     result.add('$type get $columnName => _$columnName;');
-    result.add('void set$columnSetter($type newValue) => _$columnName = newValue;');
+    result.add('set $columnName($type newValue) => _$columnName = newValue;');
     return result;
   }
 }

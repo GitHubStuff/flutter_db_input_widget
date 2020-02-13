@@ -14,8 +14,8 @@ class ObjectCRUD {
 
   Future<void> createObjectMethod() {
     generatorIO.newSection(
-        name: '///- Create object from SQL',
-        body: ['static Future<void> createObject(int parentRow, String parentName) async {'],
+        name: '///- *Create* object from SQL',
+        body: ['static Future<int> create(SQLiteLink link) async {'],
         padding: Headers.classIndent);
     generatorIO.add(['setParentRowId(parentRow);'], padding: Headers.classIndent + 3);
     generatorIO.add(['await createRecord();'], padding: Headers.classIndent + 3);

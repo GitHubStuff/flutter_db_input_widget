@@ -13,6 +13,7 @@ import 'package:path_provider/path_provider.dart';
 ///
 class GeneratorIO extends DBProjectIO {
   final String rootFileName;
+  String get tableName => Strings.capitalize(rootFileName);
   GeneratorIO({this.rootFileName, String suffix = '.g.dart'}) : super(rootFileName, fileSuffix: suffix);
   List<String> _lines = List();
 
