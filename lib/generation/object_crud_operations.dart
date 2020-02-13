@@ -12,12 +12,15 @@ class ObjectCRUD {
   final DBProjectBloc projectBloc;
   ObjectCRUD({this.callback, this.generatorIO, this.projectBloc});
 
-  Future<void> createObjectMethod() {
+  Future<void> createMethod() {
     generatorIO.newSection(
         name: '///- *Create* object from SQL',
-        body: ['static Future<int> create(SQLiteLink link) async {'],
+        body: ['static Future<int> create(SQL.SQLiteLink link) async {'],
         padding: Headers.classIndent);
-    generatorIO.add(['setParentRowId(parentRow);'], padding: Headers.classIndent + 3);
+    generatorIO.add([
+      '${Headers.parentRowid} = link.rowid;',
+      '${Headers.parentTableName} = link.tableName;',
+    ], padding: Headers.classIndent + 3);
     generatorIO.add(['await createRecord();'], padding: Headers.classIndent + 3);
 
     List<DBRecord> columnRecords = projectBloc.columnsInTable(name: generatorIO.rootFileName);
@@ -30,6 +33,7 @@ class ObjectCRUD {
     return null;
   }
 
+  ///------
   Future<void> readObjectMethod() {
     generatorIO.newSection(
         name: '///- Read Object from SQL',
@@ -39,7 +43,7 @@ class ObjectCRUD {
     generatorIO.add([
       'List<${generatorIO.rootFileName}> results = await ${generatorIO.rootFileName}.readPartialRecord(where: where);',
       'for (${generatorIO.rootFileName} item in results) {',
-      "   final subWhere = \'(parentRowId = \${item.rowid} AND parentClassName = \$${generatorIO.rootFileName}\';",
+      "   final subWhere = \'(parentRowid = \${item.rowid} AND parentTableName = \$${generatorIO.rootFileName}\';",
     ], padding: Headers.classIndent + 3);
     for (DBRecord column in columnRecords) {
       final ColumnDeclarations declarations = ColumnDeclarations(record: column);

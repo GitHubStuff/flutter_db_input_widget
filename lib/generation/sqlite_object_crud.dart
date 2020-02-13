@@ -48,6 +48,7 @@ class SQLiteObjectCrud {
     generatorIO.add(['}\n'], padding: Headers.classIndent);
   }
 
+  ///-----
   Future<void> createSQLReadClass() async {
     generatorIO.newSection(
         name: '///- SQLite readFromSql class',
@@ -57,14 +58,14 @@ class SQLiteObjectCrud {
         padding: Headers.classIndent);
     String sql = '''
     String whereClause;
-    if (parentTableName != null) whereClause = "(parentClassName = '\$parentTableName'";
+    if (parentTableName != null) whereClause = "(parentTableName = '\$parentTableName'";
     if (parentTableRowid != null) {
       if (whereClause != null) {
         whereClause += ' AND ';
       } else {
         whereClause = '(';
       }
-      whereClause += "parentRowId = \$parentTableRowid";
+      whereClause += "parentRowid = \$parentTableRowid";
     }
     if (whereClause != null) whereClause += ')';
     List<Map<String,dynamic>> results = await readRecord(where: whereClause);
