@@ -51,7 +51,7 @@ class SQLiteCRUD {
     valueList.add(previousValue);
 
     generatorIO.newSection(
-        name: '///- SQLite Create ', body: ['Future<int> create(SQL.SQLiteLink link) async {'], padding: Headers.classIndent);
+        name: '///- SQLite Create ', body: ['Future<int> create({SQL.SQLiteLink link}) async {'], padding: Headers.classIndent);
     generatorIO.add([
       'await createTable();',
       'this.${Headers.parentRowid} = link.rowid;',
@@ -130,7 +130,7 @@ class SQLiteCRUD {
 
     generatorIO.newSection(
         name: '///- SQLite Update Class',
-        body: ["Future<int> updateRecord({SQL.SQLiteLink link}) async {"],
+        body: ["Future<int> update({SQL.SQLiteLink link}) async {"],
         padding: Headers.classIndent);
     generatorIO.add([
       'final clause = link.clause;',

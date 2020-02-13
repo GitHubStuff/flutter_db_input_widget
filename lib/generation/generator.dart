@@ -6,9 +6,10 @@ import 'package:flutter_db_input_widget/generation/factory_declarations.dart';
 import 'package:flutter_db_input_widget/generation/fixed_headers.dart' as Headers;
 import 'package:flutter_db_input_widget/generation/generation_helpers.dart';
 import 'package:flutter_db_input_widget/generation/library_generator.dart';
+import 'package:flutter_db_input_widget/generation/sqlite_crud.dart';
+import 'package:flutter_db_input_widget/generation/sqlite_crud_links.dart';
 import 'package:flutter_db_input_widget/generation/sqlite_declarations.dart';
 import 'package:flutter_db_input_widget/generation/sqlite_helpers.dart';
-import 'package:flutter_db_input_widget/generation/sqlite_records_crud.dart';
 import 'package:flutter_db_input_widget/io/db_project_io.dart';
 import 'package:flutter_db_input_widget/model/db_record.dart';
 import 'package:flutter_strings/flutter_strings.dart' as Strings;
@@ -95,6 +96,12 @@ class Generator {
       sqliteCRUD.createSQLDelete();
       generatorIO.add(['//- **************** END Sqlite C.R.U.D.  {Create, Read, Update, Delete}'], padding: Headers.classIndent);
 
+      generatorIO.add(['///- **************** BEGINS Sqlite C.R.U.D. for linked records']);
+      final sqliteCRUDLinks = SqliteCRUDLinks(callback: callback, generatorIO: generatorIO, projectBloc: projectBloc);
+      sqliteCRUDLinks.sqlCreate();
+      sqliteCRUDLinks.sqlRead();
+      sqliteCRUDLinks.sqlUpdate();
+      sqliteCRUDLinks.sqlDelete();
 //      final objectCRUD = ObjectCRUD(callback: callback, generatorIO: generatorIO, projectBloc: projectBloc);
 //      objectCRUD.createMethod();
 //      objectCRUD.readObjectMethod();
