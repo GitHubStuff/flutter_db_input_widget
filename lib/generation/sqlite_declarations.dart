@@ -14,19 +14,20 @@ class SQLiteDeclarations {
   SQLiteDeclarations({this.callback, this.generatorIO, this.projectBloc});
 
   Future<dynamic> createSQLiteTable() async {
-    List<String> additionalTables = List();
-    generatorIO.newSection(name: '///- SQLite Create Table', padding: Headers.classIndent);
+    generatorIO.newSection(name: '///- **********', body: ['///- SQLite Create Table'], padding: Headers.classIndent);
     generatorIO.add(['static Future<dynamic> createTable() async {'], padding: Headers.classIndent);
-    generatorIO
-        .add(["final create = '''CREATE TABLE IF NOT EXISTS ${generatorIO.rootFileName} ("], padding: Headers.parameterIntent);
-    String firstRow = '${Headers.parentRowId} INTEGER DEFAULT 0,';
+    generatorIO.add([
+      'if (!_createTableIfNeeded) return null;',
+      '_createTableIfNeeded = false;',
+      "final create = '''CREATE TABLE IF NOT EXISTS ${generatorIO.tableName} (",
+    ], padding: Headers.parameterIntent);
+    String firstRow = '${Headers.parentRowid} INTEGER DEFAULT 0,';
     generatorIO.add([firstRow], padding: Headers.parameterIntent + 3);
-    String previous = "${Headers.parentClassName} TEXT DEFAULT ''";
+    String previous = "${Headers.parentTableName} TEXT DEFAULT ''";
     List<DBRecord> columnRecords = projectBloc.columnsInTable(name: generatorIO.rootFileName);
     for (DBRecord record in columnRecords) {
       final sqliteType = record.sqliteType();
       if (sqliteType == null) {
-        additionalTables.add('await ${Strings.capitalize(record.target)}.createTable();');
         continue;
       }
       generatorIO.add([previous + ','], padding: Headers.parameterIntent + 3);
@@ -35,14 +36,9 @@ class SQLiteDeclarations {
     generatorIO.add([previous, ")''';"], padding: Headers.parameterIntent + 3);
     generatorIO.blankLine;
     generatorIO.add([
-      'if (_createTableIfNeeded) await SQL.SqliteController.database.execute(create);',
-      '_createTableIfNeeded = false;   // Set to prevent future table creates',
+      'await SQL.SqliteController.database.execute(create);',
+      'return null;',
     ], padding: Headers.parameterIntent);
-    if (additionalTables.length > 0) {
-      generatorIO.blankLine;
-      generatorIO.add(additionalTables, padding: Headers.parameterIntent);
-      generatorIO.blankLine;
-    }
     generatorIO.add(['}'], padding: Headers.classIndent);
     return null;
   }
@@ -62,11 +58,11 @@ class SQLiteDeclarations {
       "int parentId;",
       "String parentName;",
       "for (Map<String, dynamic> item in result) {",
-      "   parentId = item['${Headers.parentRowId}'];",
+      "   parentId = item['${Headers.parentRowid}'];",
       "   if (parentId == null || parentId == 0) throw Exception('Invalid state - parentId \$parentId');",
-      "   parentName = item['${Headers.parentClassName}'];",
+      "   parentName = item['${Headers.parentTableName}'];",
       "   if (parentName == null || parentName == '') throw Exception('Invalid state - parentName \"\$parentName\"');",
-      "   String whereClause = \"(${Headers.parentRowId} = parentId AND ${Headers.parentClassName} = '\$parentName\')\";",
+      "   String whereClause = \"(${Headers.parentRowid} = parentId AND ${Headers.parentTableName} = '\$parentName\')\";",
     ];
     bool first = true;
     for (DBRecord record in columnRecords) {
@@ -92,41 +88,5 @@ class SQLiteDeclarations {
     }
     if (!first) generatorIO.add(['}'], padding: Headers.levelIndent(2));
     generatorIO.add(['    return result;', '}'], padding: Headers.classIndent);
-  }
-
-  Future<void> createSQLSaveClass() async {
-    generatorIO.newSection(
-      name: '///- SQLite saveToSql class (properties, arrays, classes)',
-      body: ['Future<void> saveToSql() async {'],
-      padding: Headers.classIndent,
-    );
-    generatorIO.add(['int newRowId = await createRecord();', 'setRowid(newRowId);'], padding: Headers.levelIndent(1));
-    List<DBRecord> columnRecords = projectBloc.columnsInTable(name: generatorIO.rootFileName);
-    for (DBRecord record in columnRecords) {
-      final declaration = ColumnDeclarations(record: record);
-      if (record.columnType == ColumnTypes.array) {
-        String code = '''
-     for (${declaration.targetName} item in ${declaration.columnName}) {
-        if (item == null) continue;
-        item.setParentRowId(rowid);
-        item.setParentClassName(class${generatorIO.rootFileName});
-        await item.saveToSql();
-     }''';
-        generatorIO.add([code]);
-        continue;
-      }
-      if (record.columnType == ColumnTypes.clazz) {
-        String code = '''
-    if (${declaration.columnName} != null) {
-      ${declaration.columnName}.setParentRowId(rowid);
-      ${declaration.columnName}.setParentClassName(class${generatorIO.rootFileName});
-      await ${declaration.columnName}.saveToSql();
-    }
-    ''';
-        generatorIO.blankLine;
-        generatorIO.add([code]);
-      }
-    }
-    generatorIO.add(['}\n'], padding: Headers.classIndent);
   }
 }

@@ -18,10 +18,10 @@ class SQLiteCRUD {
     List<DBRecord> columnRecords = projectBloc.columnsInTable(name: generatorIO.rootFileName);
     List<String> keyList = List();
     List<String> valueList = List();
-    keyList.add('${Headers.parentRowId},');
-    valueList.add('\$_${Headers.parentRowId},');
-    String previousKey = '${Headers.parentClassName}';
-    String previousValue = '"\$_${Headers.parentClassName}"';
+    keyList.add('${Headers.parentRowid},');
+    valueList.add('\${link.rowid},');
+    String previousKey = '${Headers.parentTableName}';
+    String previousValue = '"\${link.tableName}"';
     for (DBRecord record in columnRecords) {
       final declaration = ColumnDeclarations(record: record);
       if (record.columnType == ColumnTypes.array || record.columnType == ColumnTypes.clazz) continue;
@@ -51,51 +51,60 @@ class SQLiteCRUD {
     valueList.add(previousValue);
 
     generatorIO.newSection(
-        name: '///- SQLite Create Record', body: ['Future<int> createRecord() async {'], padding: Headers.classIndent);
+        name: '///- SQLite Create ', body: ['Future<int> create(SQL.SQLiteLink link) async {'], padding: Headers.classIndent);
     generatorIO.add([
       'await createTable();',
-      "final sql = '''INSERT INTO ${generatorIO.rootFileName}",
+      'this.${Headers.parentRowid} = link.rowid;',
+      'this.${Headers.parentTableName} = link.tableName;',
+      "final sql = '''INSERT INTO ${generatorIO.tableName}",
       "(",
     ], padding: Headers.levelIndent(1));
-    generatorIO.add(keyList, padding: Headers.levelIndent(2));
+    generatorIO.add(keyList, padding: Headers.levelIndent(3));
     generatorIO.add([')', 'VALUES', '('], padding: Headers.levelIndent(1));
-    generatorIO.add(valueList, padding: Headers.levelIndent(2));
+    generatorIO.add(valueList, padding: Headers.levelIndent(3));
     generatorIO.add([
       ")''';",
       '',
       'int newRowid = await SQL.SqliteController.database.rawInsert(sql);',
-      'setRowid(newRowid);'
-          'return rowid;',
+      'this.rowid = newRowid;',
+      'return this.rowid;',
     ], padding: Headers.levelIndent(1));
     generatorIO.add(['}'], padding: Headers.classIndent);
     callback('sqlite_declarations: completed sqlite insert');
     return null;
   }
 
-  /// C(Read)UD
+  ///------------------------------------------------------------------------------------------------------------------------------
+  ///- C(Read)UD
   Future<void> createSQLRead() {
-    String sql = '''  ///- Return records of sql query
-  Future<List<Map<String, dynamic>>> readRecord({String where, String orderBy = 'rowid'}) async {
+    String sql =
+        '''static Future<List<${generatorIO.rootFileName}>> read({SQL.SQLiteLink link, String whereClause, String orderBy = 'rowid'}) async {
     await createTable();
-    String sql = 'SELECT rowid,* from ${generatorIO.rootFileName}';
-    if (where != null) sql += ' WHERE \$where';
+    final clause = whereClause ?? link.clause;
+    String sql = 'SELECT rowid,* from ${generatorIO.tableName}';
+    if (clause != null) sql += ' WHERE \$clause';
     if (orderBy != null) sql += ' ORDER BY \$orderBy';
-    var results = await SQL.SqliteController.database.rawQuery(sql).catchError((error, stack) {
+    List<Map<String,dynamic>> maps = await SQL.SqliteController.database.rawQuery(sql).catchError((error, stack) {
        throw Exception(error.toString());
     });
+    List<${generatorIO.rootFileName}> results = List();
+    for (Map<String,dynamic> map in maps) {
+       final result = ${generatorIO.rootFileName}.fromJson(map);
+       results.add(result);
+    }  
     return results;
-  }
-''';
-    generatorIO.newSection(name: '///- SQL READ', body: [sql]);
+  }''';
+    generatorIO.newSection(name: '///- SQLite Read', body: [sql], padding: Headers.classIndent);
     return null;
   }
 
-  /// CR(Update)D
+  ///------------------------------------------------------------------------------------------------------------------------------
+  ///- CR(Update)D
   Future<dynamic> createSQLUpdate() async {
     List<DBRecord> columnRecords = projectBloc.columnsInTable(name: generatorIO.rootFileName);
     List<String> keyList = List();
-    keyList.add('${Headers.parentRowId} = \$${Headers.parentRowId},');
-    String previousKey = '${Headers.parentClassName} = "\$${Headers.parentClassName}"';
+    keyList.add('${Headers.parentRowid} = \$${Headers.parentRowid},');
+    String previousKey = '${Headers.parentTableName} = "\$${Headers.parentTableName}"';
     for (DBRecord record in columnRecords) {
       final declaration = ColumnDeclarations(record: record);
       if (record.columnType == ColumnTypes.array || record.columnType == ColumnTypes.clazz) continue;
@@ -120,34 +129,37 @@ class SQLiteCRUD {
     keyList.add(previousKey);
 
     generatorIO.newSection(
-        name: '///- SQLite Update Class (properties, arrays, classes)',
-        body: [
-          "Future<int> updateRecord({String where = 'rowid = \$rowid'}) async {",
-        ],
+        name: '///- SQLite Update Class',
+        body: ["Future<int> updateRecord({SQL.SQLiteLink link}) async {"],
         padding: Headers.classIndent);
     generatorIO.add([
+      'final clause = link.clause;',
       'await createTable();',
-      "final sql = '''UPDATE ${generatorIO.rootFileName}",
+      'this.${Headers.parentRowid} = link.rowid;',
+      'this.${Headers.parentTableName} = link.tableName;',
+      "final sql = '''UPDATE ${generatorIO.tableName}",
       "SET",
     ], padding: Headers.levelIndent(1));
     generatorIO.add(keyList, padding: Headers.levelIndent(2));
-    generatorIO.add(["WHERE \$where''';"], padding: Headers.levelIndent(1));
+    generatorIO.add(["WHERE \$clause''';"], padding: Headers.levelIndent(1));
     generatorIO.add(['', 'return await SQL.SqliteController.database.rawUpdate(sql);'], padding: Headers.levelIndent(1));
     generatorIO.add(['}'], padding: Headers.classIndent);
     callback('sqlite_declarations: completed sqlite insert');
     return null;
   }
 
+  ///------------------------------------------------------------------------------------------------------------------------------
   /// CRU(Delete)
   Future<void> createSQLDelete() {
     generatorIO.newSection(
-        name: '///- Create class delete method (properties, classes, arrays)',
-        body: ["Future<int> deleteRecord(String where = \$rowid') async {"],
+        name: '///- Create Delete',
+        body: ["Future<int> delete({SQL.SQLiteLink link, String where}) async {"],
         padding: Headers.classIndent);
     generatorIO.add([
       'await createTable();',
-      "String sql = 'DELETE FROM ${generatorIO.rootFileName}",
-      "if (where != null) sql = '\$sql WHERE \$where';",
+      'final clause = where ?? link?.clause;',
+      "String sql = 'DELETE FROM ${generatorIO.tableName} ';",
+      "if (where != null) sql = '\$sql WHERE \$clause';",
       "return await SQL.SqliteController.database.rawDelete(sql);",
     ], padding: Headers.classIndent + 3);
     generatorIO.add(['}'], padding: Headers.classIndent);

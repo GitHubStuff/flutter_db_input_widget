@@ -64,8 +64,8 @@ const int classIndent = 3;
 const int parameterIntent = 7;
 const int trailingComment = 5;
 
-const String parentRowId = 'parentRowId';
-const String parentClassName = 'parentClassName';
+const String parentRowid = 'parentRowid';
+const String parentTableName = 'parentTableName';
 const String sqlRowid = 'rowid';
 const String suffix = '.g.dart';
 
