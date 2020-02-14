@@ -1,4 +1,4 @@
-package com.icodeforyou.example
+package com.icodeforyou.example_db_input_widget
 
 import androidx.annotation.NonNull;
 import io.flutter.embedding.android.FlutterActivity

@@ -1,8 +1,8 @@
-name: example
-description: A new Flutter application.
-# Paste just below 'description:'
+name: example_db_input_widget
+description: Crude editor for creating SQLite objects
 
-version: 0.0.2+1
+
+version: 0.1.0+1
 
 environment:
   sdk: '>=2.1.0 <3.0.0'

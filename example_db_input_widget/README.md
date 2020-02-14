@@ -1,6 +1,6 @@
-# example
+# example_db_input_widget
 
-A new Flutter application.
+An example Flutter application.
 
 ## Getting Started
 
