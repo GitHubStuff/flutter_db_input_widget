@@ -3,22 +3,9 @@ import 'package:flutter_strings/flutter_strings.dart' as Strings;
 
 typedef RecordBuilder<T> = T Function(Map<String, dynamic> data);
 
-//class ABCDEF extends SQL.SQLParse<ABCDEF> {
-//  final String moose;
-//  ABCDEF(this.moose);
-//
-//  factory ABCDEF.fromJson(Map<String, dynamic> json) {
-//    String bob = 'Bob';
-//    return ABCDEF(json['critter']);
-//  }
-//
-//  @override
-//  Map<String, dynamic> toJson() {
-//    // TODO: implement toJson
-//    String bob = 'Bob';
-//    return null;
-//  }
-//}
+/// This class has 'flutter syntax' for fields/columns declaration (note a property of an object(field) is column in the database)
+/// The classes in Flutter are capitalized so there are several 'get' operations to handle those requirements of fields and columns
+/// based on the datatype.
 
 class ColumnDeclarations {
   final DBRecord record;
@@ -31,6 +18,8 @@ class ColumnDeclarations {
   String get constructorParameterAssignment => 'set$columnSetter($columnName);';
   String get targetName => Strings.capitalize(record.target);
 
+  /// The syntax on how the field/column will be presented is controlled by the datatype of the field so
+  /// vectors are needed to match the declaration syntax to type.
   List<String> columnDeclaration() {
     switch (record.columnType) {
       case ColumnTypes.array:
@@ -52,22 +41,7 @@ class ColumnDeclarations {
     }
   }
 
-  String columnCreate() {
-    if (record.columnType == ColumnTypes.array || record.columnType == ColumnTypes.clazz) {
-      return record.name;
-    } else {
-      return null;
-    }
-  }
-
-  String columnDispose() {
-    if (record.columnType == ColumnTypes.array || record.columnType == ColumnTypes.clazz) {
-      return 'await delete$columnSetter();';
-    } else {
-      return null;
-    }
-  }
-
+  /// Provide a translation of data type to actual text
   String _columnType() {
     switch (record.columnType) {
       case ColumnTypes.array:
@@ -89,6 +63,8 @@ class ColumnDeclarations {
     }
   }
 
+  /// Theses methods provide the flutter syntax that will appear just after the class declaration,
+  /// they are the 'properties' of the class
   List<String> _arrayColumns() {
     List<String> result = List();
     result.add('List<$targetName> _$columnName;${record.trailingComment}');

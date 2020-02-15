@@ -6,6 +6,10 @@ import 'package:flutter_theme_package/flutter_theme_package.dart';
 import 'package:flutter_tracers/trace.dart' as Log;
 import 'package:keyboard_visibility/keyboard_visibility.dart';
 
+/// This is a 'crude' editor for breaking down json fields, the cloud tags, and data type (array, bool, class, date, int, real, string)
+/// to generate .g.dart files with SQLite code to allow for access and updates to be created/read/updated/delete on device in
+/// apps the have a single database file design.
+///
 void main() => runApp(MyApp());
 
 class MyApp extends StatelessWidget {
@@ -272,7 +276,7 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
                         });
                       }),
                   width: ScreenSize.width * 0.20),
-              opacity: (tableName == null) ? 0.2 : 1.0,
+              opacity: (tableName == null) ? 0.0 : 1.0,
             ),
           ],
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -282,7 +286,7 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
         /// Data input line
         Opacity(
           child: tabletInputLine,
-          opacity: (FieldInput.validateInputField(name: tableName) == null) ? 1.0 : 0.2,
+          opacity: (FieldInput.validateInputField(name: tableName) == null) ? 1.0 : 0.0,
         ),
 
         /// Table of data
@@ -302,7 +306,7 @@ class _Example extends State<Example> with WidgetsBindingObserver, AfterLayoutMi
                   : Container(),
             ),
           ),
-          opacity: (projectBloc == null) ? 0.2 : 1.0,
+          opacity: (projectBloc == null) ? 0.0 : 1.0,
         ),
       ],
     );

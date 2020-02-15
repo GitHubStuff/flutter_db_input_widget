@@ -12,6 +12,9 @@ class FactoryDeclarations {
   final DBProjectBloc projectBloc;
   const FactoryDeclarations({@required this.callback, @required this.generatorIO, @required this.projectBloc});
 
+  /// Code to generate the syntax for 'factory' methods of "toCloud" for mapping columns/fields/properties of the object
+  /// to keys of the JSON syntax from the cloud (there are 'property'-names and 'cloud'-names so that any keywords coming
+  /// from an API call can be translated into a usable name on the method.
   /// Create a Map<String,dynamic> property that can be used to PUT to server/cloud endpoint, this uses
   /// the 'json' field that was added in the form.
   Future<void> createInlineCloudMapProperty() {
@@ -39,8 +42,6 @@ class FactoryDeclarations {
   /// Properties, List<object>, and 'class'-properties to json format (Map<String, dynamic>)
   Future<void> createInlineMapProperty() {
     generatorIO.newSection(name: '///- ToJson', body: ['Map<String, dynamic> toJson() => {'], padding: Headers.classIndent);
-//    generatorIO.add(["'${Headers.parentRowid}': ${Headers.parentRowid} ?? 0,"], padding: Headers.parameterIntent);
-//    generatorIO.add(["'${Headers.parentTableName}': ${Headers.parentTableName} ?? '',"], padding: Headers.parameterIntent);
     List<String> toJsonList = List();
     final tablename = generatorIO.rootFileName;
     List<DBRecord> columnRecords = projectBloc.columnsInTable(name: tablename);
