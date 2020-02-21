@@ -1,5 +1,7 @@
 import 'package:intl/intl.dart' as INTL;
 
+/// Static strings with large blocks of template text used in code generation
+
 const String _fileHeader = '''/// AUTO-GENERATED CODE - DO NOT MODIFY IF POSSIBLE
 /// Created: [DATE]
 
