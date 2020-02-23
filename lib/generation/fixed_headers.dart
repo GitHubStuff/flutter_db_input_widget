@@ -7,7 +7,7 @@ const String _fileHeader = '''/// AUTO-GENERATED CODE - DO NOT MODIFY IF POSSIBL
 
 import 'package:sqflite/sqflite.dart';
 import 'package:flutter_sqlite_controller/flutter_sqlite_controller.dart' as SQL;
-import '../../product_test.g.dart';''';
+''';
 
 String libraryHeader() {
   final heading = '''/// AUTO-GENERATED CODE - DO NOT MODIFY IF POSSIBLE

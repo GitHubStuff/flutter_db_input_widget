@@ -51,11 +51,13 @@ class SQLiteCRUD {
     valueList.add(previousValue);
 
     generatorIO.newSection(
-        name: '///- SQLite Create ', body: ['Future<int> create({SQL.SQLiteLink link}) async {'], padding: Headers.classIndent);
+        name: '///- SQLite Create ',
+        body: ['Future<int> create({@required SQL.SQLiteLink link}) async {'],
+        padding: Headers.classIndent);
     generatorIO.add([
       'await createTable();',
       'this.${Headers.parentRowid} = link.rowid;',
-      'this.${Headers.parentTableName} = link.tableName;',
+      "this.${Headers.parentTableName} = link.tableName;",
       "final sql = '''INSERT INTO ${generatorIO.tableName}",
       "(",
     ], padding: Headers.levelIndent(1));
