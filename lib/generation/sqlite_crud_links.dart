@@ -46,12 +46,14 @@ class SqliteCRUDLinks {
   Future<dynamic> sqlRead() async {
     generatorIO.newSection(
         name: '///- SQLRead Read all linked records',
-        body: ['static Future<List<${generatorIO.rootFileName}>> readLink({SQL.SQLiteLink sqlLink, String whereClause}) async {'],
+        body: [
+          'static Future<List<${generatorIO.rootFileName}>> readLink({SQL.SQLiteLink sqlLink, String whereClause, String orderBy}) async {'
+        ],
         padding: Headers.classIndent);
     generatorIO.add([
-      'if (sqlLink == null && whereClause == null) return null;',
-      "final where = (sqlLink.tableName == '${generatorIO.rootFileName}') ? '(rowid = \${sqlLink.rowid})' : sqlLink.clause;",
-      'List<${generatorIO.rootFileName}> list = await read(whereClause: where);',
+      "String where = (sqlLink?.tableName == '${generatorIO.rootFileName}') ? '(rowid = \${sqlLink.rowid})' : sqlLink?.clause;",
+      'where ??= whereClause;',
+      'List<${generatorIO.rootFileName}> list = await read(whereClause: where, orderBy: orderBy);',
     ], padding: Headers.classIndent + 3);
     List<DBRecord> columnRecords = projectBloc.columnsInTable(name: generatorIO.rootFileName);
     bool usingLink = false;
@@ -96,7 +98,7 @@ class SqliteCRUDLinks {
       "assert(sqlLink != null);",
       "String clause = '(rowid = \${sqlLink.rowid})';",
       "List<${generatorIO.rootFileName}> list = await readLink(whereClause: clause);",
-      "if (list == null || list.length != 1) throw SQLiteRecordNotFoundException('Cannot find record: \$clause', 400);",
+      "if (list == null || list.length != 1) throw SQL.SQLiteRecordNotFoundException('Cannot find record: \$clause', 400);",
       "return list[0];"
     ], padding: Headers.classIndent + 3);
     generatorIO.add(['}'], padding: Headers.classIndent);

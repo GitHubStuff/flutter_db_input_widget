@@ -82,7 +82,7 @@ class SQLiteCRUD {
     String sql =
         '''static Future<List<${generatorIO.rootFileName}>> read({SQL.SQLiteLink link, String whereClause, String orderBy = 'rowid'}) async {
     await createTable();
-    final clause = whereClause ?? link.clause;
+    final clause = whereClause ?? link?.clause;
     String sql = 'SELECT rowid,* from ${generatorIO.tableName}';
     if (clause != null) sql += ' WHERE \$clause';
     if (orderBy != null) sql += ' ORDER BY \$orderBy';
