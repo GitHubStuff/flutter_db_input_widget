@@ -2,15 +2,14 @@ import 'package:intl/intl.dart' as INTL;
 
 /// Static strings with large blocks of template text used in code generation
 
-const String _fileHeader = '''/// AUTO-GENERATED CODE - DO NOT MODIFY IF POSSIBLE
+const String _fileHeader = '''/// AUTO-GENERATED CODE - DO NOT MODIFY
 /// Created: [DATE]
 
 import 'package:sqflite/sqflite.dart';
-import 'package:flutter_sqlite_controller/flutter_sqlite_controller.dart' as SQL;
-''';
+import 'package:flutter_sqlite_controller/flutter_sqlite_controller.dart' as SQL;''';
 
 String libraryHeader() {
-  final heading = '''/// AUTO-GENERATED CODE - DO NOT MODIFY IF POSSIBLE
+  final heading = '''/// AUTO-GENERATED CODE - DO NOT MODIFY
 /// Created: [DATE]
 ''';
   final timestamp = INTL.DateFormat('MMMM dd,yyyy HH:mm').format(DateTime.now().toUtc()) + '(utc)';
@@ -39,7 +38,11 @@ String createStaticBuilders(String classname) {
     if (array == null) return result;
     if (array is List<Map<String,dynamic>>) {
       for (Map<String,dynamic> item in array) {
-         result.add($classname.fromJson(item));
+         if (item['parentTableName'] == null) {
+           result.add($classname.fromCloud(item));
+         } else {
+           result.add($classname.fromJson(item));
+         }
       }
       return result;
     }
