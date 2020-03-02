@@ -2,7 +2,7 @@ name: example_db_input_widget
 description: Crude editor for creating SQLite objects
 
 
-version: 0.1.0+1
+version: 0.1.0+2
 
 environment:
   sdk: '>=2.1.0 <3.0.0'
@@ -13,6 +13,9 @@ dependencies:
   cupertino_icons: ^0.1.3
   flutter:
     sdk: flutter
+  flutter_abstract_package:
+    git:
+      url: https://github.com/GitHubStuff/flutter_abstract_package.git
   flutter_db_input_widget:
     path: ../
   flutter_theme_package:

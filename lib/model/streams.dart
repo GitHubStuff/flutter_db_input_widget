@@ -1,6 +1,6 @@
+import 'package:flutter_abstract_package/flutter_abstract_package.dart';
 import 'package:flutter_db_input_widget/flutter_db_input_widget.dart';
 import 'package:flutter_db_input_widget/model/db_record.dart';
-import 'package:flutter_db_input_widget/src/broadcast_stream.dart';
 
 /// A broadcast stream to handle when a complete field/column description has been completed
 class InputCompleteStream extends BroadcastStream<FieldInput> {

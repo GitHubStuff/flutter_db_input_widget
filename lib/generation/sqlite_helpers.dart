@@ -6,7 +6,7 @@ class SQLiteHelpers {
   static Future<void> createSQLCount({@required GeneratorIO generatorIO}) {
     final sql = '''
 ///- Return count of records in ${generatorIO.rootFileName}
-  Future<int> count(String clause) async {
+  static Future<int> count(String clause) async {
     await createTable();
     final whereClause = (clause == null) ? '' : 'WHERE \$clause';
     final sql = 'SELECT COUNT("rowid") FROM ${generatorIO.rootFileName} \$whereClause';
